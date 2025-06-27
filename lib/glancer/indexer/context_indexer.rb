@@ -6,7 +6,9 @@ module Glancer
       def index!
         puts("[Glancer::Indexer::ContextIndexer] Indexing context...")
         path = Glancer.configuration.context_file_path
-        return [] if path.blank? || !File.exist?(path)
+        if path.nil? || !File.exist?(path)
+          raise("[Glancer::Indexer::ContextIndexer] No context file found at #{path}. Skipping indexing.")
+        end
 
         content = File.read(path)
         split_into_chunks(content).map do |chunk|

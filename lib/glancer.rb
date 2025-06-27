@@ -26,3 +26,6 @@ require "glancer/indexer/schema_indexer"
 require "glancer/retriever"
 
 require "glancer/runner"
+
+require "glancer/workflows/sql_generator"
+require "glancer/workflows/executor"

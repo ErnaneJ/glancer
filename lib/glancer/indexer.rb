@@ -7,10 +7,6 @@ module Glancer
     module_function
 
     def rebuild_all!
-      puts("[Glancer::Indexer] Starting full index rebuild...")
-
-      Glancer::Embedding.delete_all
-
       puts("[Glancer::Indexer] Rebuilding all indexes...")
 
       chunks = []
