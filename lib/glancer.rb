@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "glancer/version"
-require "glancer/engine"
 require "glancer/configuration"
 
 module Glancer
@@ -16,3 +15,11 @@ module Glancer
     yield(configuration)
   end
 end
+
+require "glancer/engine"
+
+require "glancer/indexer"
+require "glancer/indexer/context_indexer"
+require "glancer/indexer/model_indexer"
+require "glancer/indexer/schema_indexer"
+require "glancer/retriever"

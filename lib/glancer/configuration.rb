@@ -3,16 +3,17 @@ module Glancer
     attr_accessor :adapter, :read_only_db,
                   :llm_provider, :llm_model,
                   :schema_permission, :models_permission,
-                  :context_file_path
+                  :context_file_path, :api_key
 
     def initialize
       @adapter = nil
       @read_only_db = nil
       @llm_provider = :gemini
-      @llm_model = "gemini-2.0-flash"
-      @schema_permission = true
-      @models_permission = true
-      @context_file_path = "config/glancer_context.md"
+      @llm_model = "gemini-1.5-flash"
+      @schema_permission = false
+      @models_permission = false
+      @context_file_path = nil # "config/llm_context.glancer.md"
+      @api_key = ENV["GEMINI_API_KEY"] # padrão via env
     end
   end
 end

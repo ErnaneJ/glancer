@@ -5,5 +5,6 @@ Glancer.configure do |config|
   config.llm_model = "gemini-1.5-flash"
   config.schema_permission = true
   config.models_permission = true
-  config.context_file_path = "config/glancer_context.md"
+  config.context_file_path = nil # "config/llm_context.glancer.md"
+  config.api_key = ENV["GEMINI_API_KEY"]
 end
