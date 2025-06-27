@@ -1,0 +1,3 @@
+bundle add glancer --path=...
+rails generate glancer:install
+rails db:migrate
