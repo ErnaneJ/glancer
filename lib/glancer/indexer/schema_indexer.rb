@@ -18,8 +18,12 @@ module Glancer
         end
       end
 
-      def split_into_chunks(text, max_length = 1000)
-        text.scan(/.{1,#{max_length}}/m)
+      def split_into_chunks(schema_text)
+        schema_text.split(/^  create_table /).map do |chunk|
+          next if chunk.strip.empty?
+
+          "create_table #{chunk.strip}"
+        end.compact
       end
     end
   end

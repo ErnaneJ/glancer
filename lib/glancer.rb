@@ -22,4 +22,7 @@ require "glancer/indexer"
 require "glancer/indexer/context_indexer"
 require "glancer/indexer/model_indexer"
 require "glancer/indexer/schema_indexer"
+
 require "glancer/retriever"
+
+require "glancer/runner"
