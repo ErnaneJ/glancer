@@ -23,7 +23,7 @@ module Glancer
         question: question,
         sql: sql,
         raw_data: raw_data,
-        sources: embeddings.map { |e| { id: e.id, type: e.source_type, path: e.source_path } }
+        sources: embeddings.map { |e| { id: e.id, type: e.source_type, path: e.source_path, score: e.score } }
       }
 
       Workflow::Cache.write(question, result) if cache

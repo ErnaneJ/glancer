@@ -7,7 +7,7 @@ module Glancer
     def store_documents(chunks_with_metadata)
       chunks_with_metadata.each do |data|
         chunk = data[:content]
-        puts("[Glancer::Retriever] Processing chunk: #{chunk[0..50]}...") # Log first 50 chars for brevity
+        puts("[Glancer::Retriever] Processing chunk: #{chunk[0..50]}...")
         vector = RubyLLM.embed(chunk, provider: Glancer.configuration.llm_provider).vectors
         Glancer::Embedding.create!(
           content: chunk,
@@ -19,16 +19,33 @@ module Glancer
       end
     end
 
-    def search(query, k: 5)
+    def search(query, k: 5, min_score: 0.6)
       query_embedding = RubyLLM.embed(query, provider: Glancer.configuration.llm_provider).vectors
 
-      Glancer::Embedding.all.map do |record|
+      Glancer::Embedding.all
+                        .map do |record|
         score = cosine_similarity(query_embedding, record.embedding)
-        [record, score]
+        weighted_score = score * weight_for(record.source_type)
+
+        { record: record, score: weighted_score }
       end
-        .sort_by { |_, score| -score }
+        .select { |r| r[:score] >= min_score }
+                        .sort_by { |r| -r[:score] }
                         .first(k)
-                        .map(&:first)
+                        .map do |r|
+        r[:record].tap do |record|
+          record.define_singleton_method(:score) { r[:score] }
+        end
+      end
+    end
+
+    def weight_for(source_type)
+      case source_type
+      when "schema"  then 1.3
+      when "context" then 1.2
+      when "models"  then 1.1
+      else 1.0
+      end
     end
 
     def cosine_similarity(vec1, vec2)
