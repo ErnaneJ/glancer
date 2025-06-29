@@ -27,5 +27,10 @@ require "glancer/retriever"
 
 require "glancer/runner"
 
-require "glancer/workflows/sql_generator"
-require "glancer/workflows/executor"
+require "glancer/workflow/builder"
+require "glancer/workflow/executor"
+require "glancer/workflow/prompt_builder"
+require "glancer/workflow/sql_extractor"
+require "glancer/workflow/sql_sanitizer"
+require "glancer/workflow/cache"
+require "glancer/workflow"
