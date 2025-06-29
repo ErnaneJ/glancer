@@ -2,7 +2,6 @@ namespace :glancer do
   desc "Show current Glancer and RubyLLM versions"
   task :version do
     puts "📦 Glancer version: #{Glancer::VERSION}"
-    puts "🤖 RubyLLM version: #{Gem.loaded_specs["ruby_llm"]&.version || "not loaded"}"
   end
 
   namespace :install do

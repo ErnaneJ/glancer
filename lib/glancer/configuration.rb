@@ -2,7 +2,7 @@ module Glancer
   class Configuration
     attr_accessor :adapter, :read_only_db,
                   :llm_provider, :llm_model, :log_output_path,
-                  :schema_permission, :models_permission,
+                  :schema_permission, :models_permission, :log_verbosity,
                   :context_file_path, :api_key, :workflow_cache_ttl
 
     def initialize
@@ -16,6 +16,7 @@ module Glancer
       @context_file_path = nil # "config/llm_context.glancer.md"
       @api_key = ENV["GEMINI_API_KEY"] # padrão via env
       @log_output_path = nil
+      @log_verbosity = :info
     end
 
     def infer_adapter
