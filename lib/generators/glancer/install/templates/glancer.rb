@@ -8,4 +8,5 @@ Glancer.configure do |config|
   config.workflow_cache_ttl = 5.minutes
   config.context_file_path = nil # "config/llm_context.glancer.md"
   config.api_key = ENV["GEMINI_API_KEY"]
+  config.log_output_path = nil # Default is to log to Rails logger or STDOUT
 end

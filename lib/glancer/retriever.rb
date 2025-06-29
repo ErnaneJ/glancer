@@ -5,38 +5,71 @@ module Glancer
     module_function
 
     def store_documents(chunks_with_metadata)
-      chunks_with_metadata.each do |data|
+      Glancer::Utils::Logger.info("Retriever", "Storing #{chunks_with_metadata.size} document chunk(s)...")
+
+      chunks_with_metadata.each_with_index do |data, idx|
         chunk = data[:content]
-        puts("[Glancer::Retriever] Processing chunk: #{chunk[0..50]}...")
+        preview = chunk[0..50].gsub(/\s+/, " ").strip
+
+        Glancer::Utils::Logger.debug("Retriever",
+                                     "Embedding chunk ##{idx + 1} (#{data[:source_type]} - #{data[:source_path]}): '#{preview}...'")
+
         vector = RubyLLM.embed(chunk, provider: Glancer.configuration.llm_provider).vectors
+
+        Glancer::Utils::Logger.debug("Retriever",
+                                     "Vector size: #{vector.size}, example values: #{vector.first(5).inspect}")
+
         Glancer::Embedding.create!(
           content: chunk,
           embedding: vector,
           source_type: data[:source_type],
           source_path: data[:source_path]
         )
-        puts("[Glancer::Retriever] Stored chunk from #{data[:source_type]}: #{data[:source_path]}")
+
+        Glancer::Utils::Logger.info("Retriever",
+                                    "Stored chunk ##{idx + 1} from #{data[:source_type]}: #{data[:source_path]}")
       end
+
+      Glancer::Utils::Logger.info("Retriever", "All chunks stored successfully.")
+    rescue StandardError => e
+      Glancer::Utils::Logger.error("Retriever", "Failed to store document chunks: #{e.class} - #{e.message}")
+      Glancer::Utils::Logger.debug("Retriever", "Backtrace:\n#{e.backtrace.join("\n")}")
+      raise Glancer::Error.new("Document storage failed: #{e.message}"), cause: e
     end
 
     def search(query, k: 5, min_score: 0.6)
+      Glancer::Utils::Logger.info("Retriever", "Searching for top #{k} results with min_score: #{min_score}")
+      Glancer::Utils::Logger.debug("Retriever", "Query: #{query}")
+
       query_embedding = RubyLLM.embed(query, provider: Glancer.configuration.llm_provider).vectors
 
-      Glancer::Embedding.all
-                        .map do |record|
+      results = Glancer::Embedding.all.map do |record|
         score = cosine_similarity(query_embedding, record.embedding)
         weighted_score = score * weight_for(record.source_type)
 
+        Glancer::Utils::Logger.debug("Retriever",
+                                     "Scored record from #{record.source_type} (#{record.source_path}) with raw=#{score.round(4)} weighted=#{weighted_score.round(4)}")
+
         { record: record, score: weighted_score }
       end
-        .select { |r| r[:score] >= min_score }
-                        .sort_by { |r| -r[:score] }
-                        .first(k)
-                        .map do |r|
+
+      top_matches = results
+                    .select { |r| r[:score] >= min_score }
+                    .sort_by { |r| -r[:score] }
+                    .first(k)
+                    .map do |r|
         r[:record].tap do |record|
           record.define_singleton_method(:score) { r[:score] }
         end
       end
+
+      Glancer::Utils::Logger.info("Retriever", "Found #{top_matches.size} matching document(s)")
+
+      top_matches
+    rescue StandardError => e
+      Glancer::Utils::Logger.error("Retriever", "Search failed: #{e.class} - #{e.message}")
+      Glancer::Utils::Logger.debug("Retriever", "Backtrace:\n#{e.backtrace.join("\n")}")
+      raise Glancer::Error.new("Search failed: #{e.message}"), cause: e
     end
 
     def weight_for(source_type)

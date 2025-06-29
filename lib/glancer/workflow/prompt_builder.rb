@@ -2,10 +2,14 @@ module Glancer
   module Workflow
     class PromptBuilder
       def self.call(question, context_chunks)
+        Glancer::Utils::Logger.info("Workflow::PromptBuilder", "Building prompt for question: #{question.inspect}")
+
         now = Time.current.strftime("%Y-%m-%d %H:%M:%S")
         adapter = Glancer.configuration.adapter || Glancer.configuration.infer_adapter
 
-        <<~PROMPT
+        Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Current time: #{now}, Adapter: #{adapter}")
+
+        prompt = <<~PROMPT
           Current datetime: #{now}
           Active Database Adapter: #{adapter}
 
@@ -45,6 +49,14 @@ module Glancer
           OUTPUT:
           SQL only:
         PROMPT
+
+        Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Prompt constructed successfully")
+
+        prompt
+      rescue StandardError => e
+        Glancer::Utils::Logger.error("Workflow::PromptBuilder", "Failed to build prompt: #{e.class} - #{e.message}")
+        Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Backtrace:\n#{e.backtrace.join("\n")}")
+        raise Glancer::Error.new("Prompt construction failed: #{e.message}"), cause: e
       end
 
       def self.example_sql(adapter)

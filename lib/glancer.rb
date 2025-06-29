@@ -16,6 +16,8 @@ module Glancer
   end
 end
 
+require "glancer/utils/logger"
+
 require "glancer/engine"
 
 require "glancer/indexer"
@@ -24,8 +26,6 @@ require "glancer/indexer/model_indexer"
 require "glancer/indexer/schema_indexer"
 
 require "glancer/retriever"
-
-require "glancer/runner"
 
 require "glancer/workflow/builder"
 require "glancer/workflow/executor"
