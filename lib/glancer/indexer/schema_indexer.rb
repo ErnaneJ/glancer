@@ -10,12 +10,15 @@ module Glancer
 
         content = File.read(schema_file)
         split_into_chunks(content).map do |chunk|
+          table_name = extract_table_name(chunk)
+          next unless table_name
+
           {
             content: chunk,
             source_type: "schema",
-            source_path: schema_file.to_s
+            source_path: "#{schema_file}##{table_name}"
           }
-        end
+        end.compact
       end
 
       def split_into_chunks(schema_text)
@@ -24,6 +27,10 @@ module Glancer
 
           "create_table #{chunk.strip}"
         end.compact
+      end
+
+      def extract_table_name(chunk)
+        chunk[/create_table ["']?([a-zA-Z0-9_]+)["']?/, 1]
       end
     end
   end

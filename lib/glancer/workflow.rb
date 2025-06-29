@@ -15,6 +15,7 @@ module Glancer
       sql = Workflow::SQLExtractor.extract(sql)
 
       Workflow::SQLSanitizer.ensure_safe!(sql)
+      Workflow::SQLValidator.validate_tables_exist!(sql)
 
       raw_data = Workflow::Executor.execute(sql)
 

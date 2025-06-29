@@ -5,13 +5,22 @@ module Glancer
         delete update insert drop truncate alter create replace
       ].freeze
 
-      def self.safe?(sql)
-        downcased = sql.downcase
-        FORBIDDEN_KEYWORDS.none? { |kw| downcased.include?(kw) }
+      def self.ensure_safe!(sql)
+        cleaned = strip_strings_and_comments(sql.downcase)
+        return unless FORBIDDEN_KEYWORDS.any? { |kw| cleaned.match?(/\b#{kw}\b/) }
+
+        raise Glancer::Error, "Query blocked due to forbidden keywords: '#{sql}'"
       end
 
-      def self.ensure_safe!(sql)
-        raise Glancer::Error, "Query blocked due to forbidden keywords" unless safe?(sql)
+      def self.strip_strings_and_comments(sql)
+        # Remove strings: '...', allowing escaped quotes
+        sql = sql.gsub(/'(?:\\'|[^'])*'/, "")
+
+        # Remove inline comments -- ...
+        sql = sql.gsub(/--.*/, "")
+
+        # Remove block comments /* ... */
+        sql.gsub(%r{/\*.*?\*/}m, "")
       end
     end
   end

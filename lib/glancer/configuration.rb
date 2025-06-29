@@ -16,5 +16,9 @@ module Glancer
       @context_file_path = nil # "config/llm_context.glancer.md"
       @api_key = ENV["GEMINI_API_KEY"] # padrão via env
     end
+
+    def infer_adapter
+      ActiveRecord::Base.connection.adapter_name.downcase.to_sym
+    end
   end
 end
