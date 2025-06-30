@@ -15,9 +15,9 @@ module Glancer
     end
 
     initializer "glancer.configure_ruby_llm" do
-      Glancer::Utils::Logger.info("Engine", "Configuring RubyLLM with Glancer settings...")
+      next unless Glancer.configuration
 
-      Glancer.configuration ||= Glancer::Configuration.new
+      Glancer::Utils::Logger.info("Engine", "Configuring RubyLLM with Glancer settings...")
 
       RubyLLM.configure do |config|
         provider = Glancer.configuration.llm_provider.to_sym

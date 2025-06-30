@@ -22,32 +22,49 @@ module Glancer
       end
 
       def show_readme
+        info = "\e[32m"
+        warn = "\e[33m"
+        debug = "\e[36m"
+        error = "\e[31m"
+        reset = "\e[0m"
+
         say <<~MSG
 
-          Glancer was successfully installed in your application.
+          #{info}╔════════════════════════════════════════════════════════════════════╗
+          ║                 ✔ Glancer installed successfully! ✔                ║
+          ╚════════════════════════════════════════════════════════════════════╝#{reset}
 
-          Next steps:
+          #{debug}Next steps:#{reset}
 
-          1. Review and customize the configuration:
-             - File: config/initializers/glancer.rb
-             - You can set adapter, read-only DB, LLM provider, and logging options.
+          #{warn}1. Review and customize the configuration:#{reset}
+             ├── File: #{debug}config/initializers/glancer.rb#{reset}
+             └── You can set:
+                 ✔ Adapter
+                 ✔ Read-only DB
+                 ✔ LLM provider
+                 ✔ Logging options
+                 ✔ ...
 
-          2. Edit the context file (optional but recommended):
-             - File: config/llm_context.glancer.md
-             - This file is currently ignored (first line is '--glancer-ignore')
-             - Remove or change the first line to enable indexing.
-             - Use it to describe business rules, table usage, or domain logic.
+          #{warn}2. Edit the context file (optional but recommended):#{reset}
+             ├── File: #{debug}config/glancer/llm_context.glancer.md#{reset}
+             ├── Currently ignored (first line is '#{error}--glancer-ignore#{reset}')
+             └── Remove or modify first line to enable indexing.
+                 Use it to describe:
+                 ✔ Business rules
+                 ✔ Table usage
+                 ✔ Domain logic
+                 ✔ ...
 
-          3. Apply the database migrations:
-             - Run: rails db:migrate
+          #{warn}3. Apply the database migrations:#{reset}
+             └── Run: #{info}rails db:migrate#{reset}
 
-          4. Index your schema, models, and context:
-             - Run: rails glancer:index:schema
-             - Run: rails glancer:index:context
-             - Run: rails glancer:index:models
+          #{warn}4. Index your schema, models, and context:#{reset}
+             ├── Run: #{info}rails glancer:index:all#{reset}
+             └── #{info}✱#{reset} Or do it separately
+                 ├── Run: #{info}rails glancer:index:schema#{reset}
+                 ├── Run: #{info}rails glancer:index:context#{reset}
+                 └── Run: #{info}rails glancer:index:models#{reset}
 
-             - Or, to rebuild all indexes at once:
-              - Run: rails glancer:index:all
         MSG
       end
     end

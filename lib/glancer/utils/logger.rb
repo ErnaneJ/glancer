@@ -69,6 +69,14 @@ module Glancer
           end
         end
       end
+
+      def self.with_debug_logs
+        old = Glancer.configuration.log_verbosity
+        Glancer.configuration.log_verbosity = :debug
+        yield
+      ensure
+        Glancer.configuration.log_verbosity = old
+      end
     end
   end
 end

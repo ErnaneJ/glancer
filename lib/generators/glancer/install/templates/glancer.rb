@@ -65,7 +65,7 @@ Glancer.configure do |config|
   # --------------------------------------
   # If your selected provider requires an API key, you can set it here.
   # It's common to fetch this from environment variables.
-  config.api_key = ENV["GEMINI_API_KEY"]
+  config.api_key = ENV["LLM_API_KEY"]
 
   # --------------------------------------
   # Logging
