@@ -26,13 +26,13 @@ module Glancer
       Workflow::SQLValidator.validate_tables_exist!(sql)
       Glancer::Utils::Logger.info("Workflow", "SQL passed table validation")
 
-      raw_data = Workflow::Executor.execute(sql)
+      raw_data = Workflow::Executor.execute(sql, original_question: question)
       Glancer::Utils::Logger.info("Workflow", "SQL executed successfully. Rows returned: #{raw_data.size}")
 
       result = {
         question: question,
         sql: sql,
-        raw_data: raw_data,
+        raw_data: Glancer::Utils::ResultFormatter.normalize(raw_data),
         sources: embeddings.map do |e|
           {
             id: e.id,

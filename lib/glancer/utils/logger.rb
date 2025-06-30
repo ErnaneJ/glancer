@@ -60,7 +60,7 @@ module Glancer
           # line = "#{emoji} [#{timestamp}] [Glancer::#{tag}] #{message}"
           line = "[#{timestamp}] [Glancer::#{tag}] #{message}"
 
-          if Glancer.configuration.log_output_path
+          if Glancer.configuration&.log_output_path
             File.open(Glancer.configuration.log_output_path, "a") { |f| f.puts(line) }
           elsif defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
             Rails.logger.send(level, line)

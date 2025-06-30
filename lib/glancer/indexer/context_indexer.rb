@@ -14,9 +14,14 @@ module Glancer
         end
 
         Glancer::Utils::Logger.debug("Indexer::ContextIndexer", "Reading context file from: #{path}")
-
         content = File.read(path)
         Glancer::Utils::Logger.debug("Indexer::ContextIndexer", "Read #{content.bytesize} bytes from context file")
+
+        if content.lines.first&.strip == "--glancer-ignore"
+          Glancer::Utils::Logger.info("Indexer::ContextIndexer",
+                                      "Context file marked with --glancer-ignore, skipping indexing.")
+          return []
+        end
 
         chunks = split_into_chunks(content)
         Glancer::Utils::Logger.info("Indexer::ContextIndexer", "Split content into #{chunks.size} chunk(s)")
@@ -29,7 +34,8 @@ module Glancer
           }
         end
       rescue StandardError => e
-        Glancer::Utils::Logger.error("Indexer::ContextIndexer", "Failed to index context: #{e.class} - #{e.message}")
+        Glancer::Utils::Logger.error("Indexer::ContextIndexer",
+                                     "Failed to index context: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Indexer::ContextIndexer", "Backtrace:\n#{e.backtrace.join("\n")}")
         raise Glancer::Error.new("Context indexing failed: #{e.message}"), cause: e
       end

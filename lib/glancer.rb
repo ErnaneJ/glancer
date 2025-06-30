@@ -17,6 +17,7 @@ module Glancer
 end
 
 require "glancer/utils/logger"
+require "glancer/utils/result_formatter"
 
 require "glancer/engine"
 

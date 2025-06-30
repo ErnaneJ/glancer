@@ -5,7 +5,7 @@ module Glancer
         Glancer::Utils::Logger.info("Workflow::PromptBuilder", "Building prompt for question: #{question.inspect}")
 
         now = Time.current.strftime("%Y-%m-%d %H:%M:%S")
-        adapter = Glancer.configuration.adapter || Glancer.configuration.infer_adapter
+        adapter = Glancer.configuration.adapter
 
         Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Current time: #{now}, Adapter: #{adapter}")
 
@@ -25,6 +25,7 @@ module Glancer
           - Do **not** return explanations or comments
           - Respect the language used in the user question
           - If the query involves time grouping (e.g., sales per month), include **all periods**, even with zero results
+          - Always specify the table name for each column (e.g., `user.name`, not just `name`), even when the table is unambiguous.
 
           VERY IMPORTANT:
           You MUST generate SQL that is compatible with #{adapter.upcase}.

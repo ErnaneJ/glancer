@@ -11,7 +11,9 @@ module Glancer
         Glancer::Utils::Logger.debug("Workflow::SQLValidator",
                                      "Tables available in indexed schema: #{indexed_tables.inspect}")
 
-        missing = tables_in_sql - indexed_tables
+        missing = tables_in_sql.reject do |table|
+          system_table?(table) || indexed_tables.include?(table)
+        end
 
         if missing.any?
           Glancer::Utils::Logger.error("Workflow::SQLValidator", "Missing table(s): #{missing.join(", ")}")
@@ -26,7 +28,14 @@ module Glancer
       end
 
       def self.extract_table_names(sql)
-        sql.scan(/\bfrom\s+([a-zA-Z0-9_]+)/i).flatten.map(&:downcase).uniq
+        sql.scan(/\bfrom\s+([a-zA-Z0-9_."]+)/i).flatten.map do |name|
+          name.gsub('"', "").downcase.strip
+        end.uniq
+      end
+
+      def self.system_table?(table_name)
+        schema = table_name.include?(".") ? table_name.split(".").first.downcase : table_name
+        system_schemas.include?(schema)
       end
 
       def self.indexed_schema_table_names
@@ -37,6 +46,19 @@ module Glancer
           .compact
           .map(&:downcase)
           .uniq
+      end
+
+      def self.system_schemas
+        case Glancer.configuration.adapter.to_s
+        when "postgres", "postgresql"
+          %w[information_schema pg_catalog pg_toast]
+        when "mysql", "mysql2"
+          %w[information_schema mysql performance_schema sys]
+        when "sqlite", "sqlite3"
+          %w[sqlite_master]
+        else
+          []
+        end
       end
     end
   end
