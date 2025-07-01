@@ -1,7 +1,7 @@
 module Glancer
   module Workflow
     class PromptBuilder
-      def self.call(question, context_chunks)
+      def self.call(question, embeddings)
         Glancer::Utils::Logger.info("Workflow::PromptBuilder", "Building prompt for question: #{question.inspect}")
 
         now = Time.current.strftime("%Y-%m-%d %H:%M:%S")
@@ -26,6 +26,9 @@ module Glancer
           - Respect the language used in the user question
           - If the query involves time grouping (e.g., sales per month), include **all periods**, even with zero results
           - Always specify the table name for each column (e.g., `user.name`, not just `name`), even when the table is unambiguous.
+          - If any table mentioned in the context contains a large number of records (e.g., over 10,000), avoid generating `SELECT *` queries or unfiltered outputs.
+          - In such cases, prefer to use `LIMIT`, filters (e.g., by date or ID), or aggregate functions (like COUNT, SUM, etc).
+          - Only use `SELECT *` when the table has very few records (less than 10) or when explicitly requested by the user.
 
           VERY IMPORTANT:
           You MUST generate SQL that is compatible with #{adapter.upcase}.
@@ -42,7 +45,7 @@ module Glancer
           #{example_sql(adapter)}
 
           CONTEXT:
-          #{context_chunks.join("\n\n")}
+          #{format_embeddings_with_stats(embeddings)}
 
           QUESTION:
           #{question}
@@ -93,6 +96,21 @@ module Glancer
         else
           "-- Example not available for this adapter."
         end
+      end
+
+      def self.format_embeddings_with_stats(embeddings)
+        embeddings.map do |embed|
+          content = embed.content.strip
+
+          if embed.source_type == "schema" && embed.source_path =~ /#(\w+)$/
+            table_name = Regexp.last_match(1)
+            count = -1 # Glancer::Utils::TableStats.count_for(table_name)
+            stats = count >= 0 ? "Table '#{table_name}' contains approximately #{count} record(s).\n" : ""
+            "#{stats}#{content}"
+          else
+            content
+          end
+        end.join("\n\n")
       end
     end
   end

@@ -1,10 +1,10 @@
 module Glancer
   module Workflow
     class Builder
-      def self.build_sql(question, context_docs)
+      def self.build_sql(question, embeddings)
         Glancer::Utils::Logger.info("Workflow::Builder", "Generating SQL from question: #{question.inspect}")
 
-        prompt = Glancer::Workflow::PromptBuilder.call(question, context_docs)
+        prompt = Glancer::Workflow::PromptBuilder.call(question, embeddings)
         Glancer::Utils::Logger.debug("Workflow::Builder", "Generated prompt for SQL generation:\n#{prompt}")
 
         chat = RubyLLM.chat(

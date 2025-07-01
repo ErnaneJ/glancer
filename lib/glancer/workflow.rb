@@ -11,23 +11,18 @@ module Glancer
       Glancer::Utils::Logger.info("Workflow", "No cached result. Performing retrieval and SQL generation...")
 
       embeddings = Retriever.search(question)
-      context_docs = embeddings.map(&:content)
       Glancer::Utils::Logger.debug("Workflow", "Retrieved #{embeddings.size} relevant document(s) for context")
 
-      sql = Workflow::Builder.build_sql(question, context_docs)
+      sql = Workflow::Builder.build_sql(question, embeddings)
       Glancer::Utils::Logger.debug("Workflow", "Generated raw SQL:\n#{sql}")
 
       sql = Workflow::SQLExtractor.extract(sql)
       Glancer::Utils::Logger.debug("Workflow", "Extracted SQL:\n#{sql}")
 
       Workflow::SQLSanitizer.ensure_safe!(sql)
-      Glancer::Utils::Logger.info("Workflow", "SQL passed sanitization")
-
       Workflow::SQLValidator.validate_tables_exist!(sql)
-      Glancer::Utils::Logger.info("Workflow", "SQL passed table validation")
 
       raw_data = Workflow::Executor.execute(sql, original_question: question)
-      Glancer::Utils::Logger.info("Workflow", "SQL executed successfully. Rows returned: #{raw_data.size}")
 
       result = {
         question: question,

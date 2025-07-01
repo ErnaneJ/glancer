@@ -62,8 +62,6 @@ module Glancer
 
           if Glancer.configuration&.log_output_path
             File.open(Glancer.configuration.log_output_path, "a") { |f| f.puts(line) }
-          elsif defined?(Rails) && Rails.respond_to?(:logger) && Rails.logger
-            Rails.logger.send(level, line)
           else
             puts("#{color}#{line}#{reset}")
           end

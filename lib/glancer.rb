@@ -19,6 +19,7 @@ end
 require "glancer/utils/logger"
 require "glancer/utils/result_formatter"
 require "glancer/utils/transaction"
+require "glancer/utils/table_stats"
 
 require "glancer/engine"
 

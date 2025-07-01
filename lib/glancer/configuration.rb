@@ -24,5 +24,11 @@ module Glancer
     rescue StandardError
       nil
     end
+
+    def self.valid_table_name?(table_name)
+      ActiveRecord::Base.connection.tables.include?(table_name.to_s)
+    rescue StandardError
+      false
+    end
   end
 end
