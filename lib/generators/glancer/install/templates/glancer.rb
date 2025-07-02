@@ -10,7 +10,7 @@ Glancer.configure do |config|
   # Force a specific database adapter if needed.
   # Possible values: :postgres, :mysql, :sqlite
   # If set to nil, Glancer will attempt to autodetect from ActiveRecord.
-  # config.adapter = nil
+  config.adapter = nil
 
   # --------------------------------------
   # Read-only database URL (optional)
@@ -18,20 +18,17 @@ Glancer.configure do |config|
   # If you want Glancer to execute queries against a read-only replica,
   # provide the full Rails-compatible database URL here.
   # If nil, the primary connection is used.
-  # config.read_only_db = nil
+  config.read_only_db = nil # nil | URL | :read_only
 
   # --------------------------------------
   # LLM Provider and Model
   # --------------------------------------
   # Select which provider to use for generating responses.
-  # Supported: :gemini (default), :openai, :ollama
-  # config.llm_provider = :gemini # default
+  # Supported: :gemini (default), :openai
+  config.llm_provider = :gemini # gemini | openai
 
   # Name of the model to be used for completions (provider-specific).
-  # Examples:
-  # - Gemini: "gemini-2.0-flash"
-  # - OpenAI: "gpt-4-turbo"
-  # config.llm_model = "gemini-2.0-flash"
+  config.llm_model = "gemini-2.0-flash"
 
   # --------------------------------------
   # Permissions
@@ -40,7 +37,7 @@ Glancer.configure do |config|
   config.schema_permission = true
 
   # Whether the LLM is allowed to analyze ActiveRecord models for structure and logic.
-  # config.models_permission = true
+  config.models_permission = false
 
   # --------------------------------------
   # Prompt Context File
@@ -54,11 +51,20 @@ Glancer.configure do |config|
   config.context_file_path = "config/glancer/llm_context.glancer.md"
 
   # --------------------------------------
+  # Documents
+  # --------------------------------------
+  config.k = 10 # Number of relevant documents to retrieve for context
+  config.min_score = 0.6 # Minimum score for a document to be considered relevant
+  config.schema_documents_weight = 1.3 # Weight for schema documents
+  config.context_documents_weight = 1.2 # Weight for context documents
+  config.models_documents_weight = 1.1 # Weight for models documents
+
+  # --------------------------------------
   # Caching
   # --------------------------------------
   # Time-to-live for cached workflow results (in seconds).
   # Helps avoid repeated LLM calls for identical questions.
-  # config.workflow_cache_ttl = 5.minutes
+  config.workflow_cache_ttl = 1.minute
 
   # --------------------------------------
   # API Key for LLM provider (optional)
@@ -72,11 +78,11 @@ Glancer.configure do |config|
   # --------------------------------------
   # Optional path to write logs to a separate file.
   # If nil, logs go to Rails.logger (if available), or STDOUT otherwise.
-  # config.log_output_path = nil
+  config.log_output_path = nil # "logs/glancer.log"
 
   # Level of verbosity for Glancer logs:
   # - :none   → disables logging
   # - :info   → normal logging (default)
   # - :debug  → verbose logging, useful for troubleshooting
-  # config.log_verbosity = :info
+  config.log_verbosity = :info # :info | :debug | :none
 end

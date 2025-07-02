@@ -14,7 +14,7 @@ namespace :glancer do
         puts "\e[31m└→ This operation will delete all existing embeddings and reindex everything.\e[0m"
       end
 
-      Glancer::Utils::Transaction.with_transaction do
+      Glancer::Utils::Transaction.make do
         Glancer::Embedding.where(source_type: %w[schema models context]).delete_all
 
         Glancer::Utils::Logger.with_debug_logs do
@@ -28,13 +28,13 @@ namespace :glancer do
     desc "Rebuild schema index only"
     task schema: :environment do
       if confirm_rebuild?(:schema)
-        Glancer::Utils::Transaction.with_transaction do
-          # Glancer::Embedding.where(source_type: "schema").delete_all
+        Glancer::Utils::Transaction.make do
+          Glancer::Embedding.where(source_type: "schema").delete_all
 
-          # Glancer::Utils::Logger.with_debug_logs do
-          #   chunks = Glancer::Indexer::SchemaIndexer.index!
-          #   Glancer::Retriever.store_documents(chunks)
-          # end
+          Glancer::Utils::Logger.with_debug_logs do
+            chunks = Glancer::Indexer::SchemaIndexer.index!
+            Glancer::Retriever.store_documents(chunks)
+          end
 
           puts "\e[32m✔ Schema index rebuilt!\e[0m"
         end
@@ -44,7 +44,7 @@ namespace :glancer do
     desc "Rebuild models index only"
     task models: :environment do
       if confirm_rebuild?(:models)
-        Glancer::Utils::Transaction.with_transaction do
+        Glancer::Utils::Transaction.make do
           Glancer::Embedding.where(source_type: "models").delete_all
 
           Glancer::Utils::Logger.with_debug_logs do
@@ -60,7 +60,7 @@ namespace :glancer do
     desc "Rebuild context index only"
     task context: :environment do
       if confirm_rebuild?(:context)
-        Glancer::Utils::Transaction.with_transaction do
+        Glancer::Utils::Transaction.make do
           Glancer::Embedding.where(source_type: "context").delete_all
 
           Glancer::Utils::Logger.with_debug_logs do

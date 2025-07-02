@@ -15,6 +15,7 @@
 ## Business Rules
 
 - "Users with role = 'admin' are considered system administrators."
+- "sales" table is very large, avoid bringing everything. Always filter by period of 30 days to 1 year
 - "Orders with status = 'cancelled' should not be counted in sales totals."
 - "Only 'paid' invoices should be considered for revenue aggregation."
 - "Products may belong to multiple categories via `product_categories` join table."

@@ -37,8 +37,9 @@ module Glancer
       raise Glancer::Error.new("Document storage failed: #{e.message}"), cause: e
     end
 
-    def search(query, k: 5, min_score: 0.6)
-      Glancer::Utils::Logger.info("Retriever", "Searching for top #{k} results with min_score: #{min_score}")
+    def search(query)
+      Glancer::Utils::Logger.info("Retriever",
+                                  "Searching for top #{Glancer.configuration.k} results with min_score: #{Glancer.configuration.min_score}")
       Glancer::Utils::Logger.debug("Retriever", "Query: #{query}")
 
       query_embedding = RubyLLM.embed(query, provider: Glancer.configuration.llm_provider).vectors
@@ -54,9 +55,9 @@ module Glancer
       end
 
       top_matches = results
-                    .select { |r| r[:score] >= min_score }
+                    .select { |r| r[:score] >= Glancer.configuration.min_score }
                     .sort_by { |r| -r[:score] }
-                    .first(k)
+                    .first(Glancer.configuration.k)
                     .map do |r|
         r[:record].tap do |record|
           record.define_singleton_method(:score) { r[:score] }
@@ -74,9 +75,9 @@ module Glancer
 
     def weight_for(source_type)
       case source_type
-      when "schema"  then 1.3
-      when "context" then 1.2
-      when "models"  then 1.1
+      when "schema"  then Glancer.configuration.schema_documents_weight
+      when "context" then Glancer.configuration.context_documents_weight
+      when "models"  then Glancer.configuration.models_documents_weight
       else 1.0
       end
     end
