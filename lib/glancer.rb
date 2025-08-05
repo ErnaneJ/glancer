@@ -16,25 +16,27 @@ module Glancer
   end
 end
 
-require "glancer/utils/logger"
-require "glancer/utils/result_formatter"
-require "glancer/utils/transaction"
-require "glancer/utils/table_stats"
+require "glancer/utils/logger" # Glancer::Utils::Logger
+require "glancer/utils/markdown_helper" # Glancer::Utils::MarkdownHelper
+require "glancer/utils/result_formatter" # Glancer::Utils::ResultFormatter
+require "glancer/utils/table_stats" # Glancer::Utils::TableStats
+require "glancer/utils/transaction" # Glancer::Utils::Transaction
 
-require "glancer/engine"
+require "glancer/engine" # Glancer::Engine
 
-require "glancer/indexer"
-require "glancer/indexer/context_indexer"
-require "glancer/indexer/model_indexer"
-require "glancer/indexer/schema_indexer"
+require "glancer/indexer" # Glancer::Indexer
+require "glancer/indexer/context_indexer" # Glancer::Indexer::ContextIndexer
+require "glancer/indexer/model_indexer" # Glancer::Indexer::ModelIndexer
+require "glancer/indexer/schema_indexer" # Glancer::Indexer::SchemaIndexer
 
-require "glancer/retriever"
+require "glancer/retriever" # Glancer::Retriever
 
-require "glancer/workflow/builder"
-require "glancer/workflow/executor"
-require "glancer/workflow/prompt_builder"
-require "glancer/workflow/sql_extractor"
-require "glancer/workflow/sql_sanitizer"
-require "glancer/workflow/sql_validator"
-require "glancer/workflow/cache"
-require "glancer/workflow"
+require "glancer/workflow" # Glancer::Workflow
+require "glancer/workflow/builder" # Glancer::Workflow::Builder
+require "glancer/workflow/cache" # Glancer::Workflow::Cache
+require "glancer/workflow/executor" # Glancer::Workflow::Executor
+require "glancer/workflow/prompt_builder" # Glancer::Workflow::PromptBuilder
+require "glancer/workflow/sql_extractor" # Glancer::Workflow::SqlExtractor
+require "glancer/workflow/sql_sanitizer" # Glancer::Workflow::SqlSanitizer
+require "glancer/workflow/sql_validator" # Glancer::Workflow::SqlValidator
+require "glancer/workflow/llm" # Glancer::Workflow::LLM

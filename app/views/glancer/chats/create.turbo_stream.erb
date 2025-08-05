@@ -1,0 +1,10 @@
+<%= turbo_stream.replace "sidebar-chat-list" do %>
+  <%= render "glancer/chats/sidebar_chat_list", chat: @chat, chats: @chats %>
+<% end %>
+
+<%= turbo_stream.replace "main-content" do %>
+  <%= render "glancer/chats/show", 
+       chat: @chat, 
+       chats: @chats,
+       messages: @chat.messages.order(:created_at) %>
+<% end %>

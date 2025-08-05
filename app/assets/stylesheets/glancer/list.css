@@ -1,0 +1,31 @@
+.message-content ul,
+.message-content ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.message-content ul {
+  list-style-type: disc;
+}
+
+.message-content ol {
+  list-style-type: decimal;
+}
+
+.message-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+  color: #374151; /* gray-700 */
+}
+
+.dark .message-content li {
+  color: #d1d5db; /* gray-300 */
+}
+
+.message-content li::marker {
+  color: #6b7280; /* gray-500 */
+}
+
+.dark .message-content li::marker {
+  color: #9ca3af; /* gray-400 */
+}

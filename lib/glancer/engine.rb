@@ -10,6 +10,28 @@ module Glancer
       end
     end
 
+    Glancer::Engine.routes.draw do
+      instance_eval(File.read(File.expand_path("../../config/routes.rb", __dir__)))
+    end
+
+    initializer "glancer.assets" do |app|
+      app.config.assets.paths << root.join("app/assets/javascripts")
+      app.config.assets.precompile += %w[
+        glancer/application.js
+      ]
+
+      app.config.assets.paths << root.join("app/assets/stylesheets")
+      app.config.assets.precompile += %w[
+        glancer/application.css
+        glancer/code-blocks.css
+        glancer/table.css
+        glancer/list.css
+        glancer/scrollbar.css
+      ]
+      app.config.assets.paths << root.join("app/assets/config")
+      app.config.assets.paths << root.join("app/assets/images")
+    end
+
     initializer "glancer.load_tasks" do
       Dir[File.join(__dir__, "../../tasks/**/*.rake")].each { |f| load f }
     end

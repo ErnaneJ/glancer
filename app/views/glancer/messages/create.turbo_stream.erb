@@ -1,0 +1,15 @@
+<%= turbo_stream.append "chat-messages" do %>
+  <%= render "glancer/messages/message", message: @message %>
+<% end %>
+
+<%= turbo_stream.append "chat-messages" do %>
+  <%= render "glancer/messages/message", message: @response_message %>
+<% end %>
+
+<%= turbo_stream.replace "message-form" do %>
+  <%= render "glancer/messages/form", chat: @chat %>
+<% end %>
+
+<%= turbo_stream.replace "message-info" do %>
+  <%= render "glancer/messages/message_info", message_info: @message_info %>
+<% end %>

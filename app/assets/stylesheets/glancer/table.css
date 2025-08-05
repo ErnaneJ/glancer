@@ -1,0 +1,97 @@
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem; /* Tailwind's text-sm */
+}
+
+thead {
+  background-color: #f9fafb; /* gray-50 */
+}
+
+thead th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  font-weight: 600;
+  color: #374151; /* gray-700 */
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  color: #374151; /* gray-700 */
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+tr:hover td {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+/* Dark mode support */
+.dark thead {
+  background-color: #1f2937; /* gray-800 */
+}
+
+.dark thead th,
+.dark tbody td {
+  border-color: #374151; /* gray-700 */
+  color: #d1d5db; /* gray-300 */
+}
+
+.dark tr:hover td {
+  background-color: #374151; /* gray-700 */
+}
+.message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.message-content th,
+.message-content td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.message-content thead {
+  background-color: #f9fafb;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.dark .message-content th,
+.dark .message-content td {
+  border-color: #374151;
+  color: #d1d5db;
+}
+
+.dark .message-content thead {
+  background-color: #1f2937;
+}
+
+.table-scroll-wrapper {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 1rem 0;
+}
+
+.table-scroll-inner {
+  max-height: 28rem; /* cerca de 10 linhas */
+  overflow-y: auto;
+}
+
+/* Scrollbar melhorada (opcional) */
+.table-scroll-inner::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-scroll-inner::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.4); /* slate-500 */
+  border-radius: 3px;
+}

@@ -1,0 +1,25 @@
+#chat-messages {
+  scroll-behavior: smooth;
+  padding-bottom: 120px;
+}
+
+.cursor-blink {
+  animation: blink 1s step-end infinite;
+  color: #a855f7;
+}
+
+@keyframes blink {
+  from, to { opacity: 1 }
+  50% { opacity: 0 }
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #2B303B;
+  margin: 1rem 0 !important;
+}
+
+.message a {
+  color: #c084fc;
+  text-decoration: none;
+}

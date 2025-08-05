@@ -1,0 +1,33 @@
+<div id="sidebar-chat-list" class="flex-1 overflow-y-auto">
+  <% @chats.each do |chat| %>
+    <div class="group flex items-center justify-between p-3 mx-2 my-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 <%= 'bg-gray-100 dark:bg-gray-700' if chat == @chat %>">
+      <%= link_to glancer.chat_path(chat), 
+          class: "flex-1 flex items-center justify-between min-w-0",
+          data: { 
+            action: "click->chat#select",
+            chat_id: chat.id 
+          } do %>
+        <div class="flex items-center min-w-0">
+          <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+          </svg>
+          <span class="truncate text-sm"><%= chat.title %></span>
+        </div>
+      <% end %>
+
+      <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+        <%= link_to glancer.chat_path(chat), 
+                    method: :delete,
+                    data: { 
+                      turbo_method: :delete,
+                      turbo_confirm: "Delete this chat?" 
+                    },
+                    class: "p-1 text-gray-400 hover:text-red-500" do %>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,21 @@
+<%= form_with model: [chat, Glancer::Message.new], 
+              url: glancer.chat_messages_path(chat), 
+              data: { 
+                controller: "message", 
+                action: "submit->message#submit",
+                message_target: "form"
+              },
+              class: "relative" do |f| %>
+  <div class="flex items-end gap-2">
+    <%= f.text_area :content, 
+                   rows: 1,
+                   placeholder: "Message Glancer...", 
+                   class: "w-full p-3 pr-12 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none",
+                   data: { message_target: "input" } %>
+    <button type="submit" class="mb-2 p-2 text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+      </svg>
+    </button>
+  </div>
+<% end %>

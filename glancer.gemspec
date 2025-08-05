@@ -30,6 +30,11 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Dependencies
+  spec.add_dependency "commonmarker", "~> 1.1"
   spec.add_dependency "rails", ">= 6.0"
   spec.add_dependency "ruby_llm", "~> 1.3.1"
+  spec.add_dependency "stimulus-rails", "~> 1.0.4"
+  spec.add_dependency "turbo-rails", "~> 0.7.0"
+
+  spec.add_development_dependency "byebug", ">= 11.1.3"
 end

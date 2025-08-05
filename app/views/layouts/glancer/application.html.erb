@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html class="h-full">
+<head>
+  <title>Glancer AI</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              '50': '#faf5ff',
+              '100': '#f3e8ff',
+              '200': '#e9d5ff',
+              '300': '#d8b4fe',
+              '400': '#c084fc',
+              '500': '#a855f7',
+              '600': '#9333ea',
+              '700': '#7e22ce',
+              '800': '#6b21a8',
+              '900': '#581c87',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <%= stylesheet_link_tag "glancer/application", media: "all", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "glancer/code-blocks", media: "all", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "glancer/table", media: "all", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "glancer/list", media: "all", "data-turbo-track": "reload" %>
+  <%= stylesheet_link_tag "glancer/scrollbar", media: "all", "data-turbo-track": "reload" %>
+  
+  <%= tag.script type: "importmap" do %>
+    <%= render partial: "glancer/_data/importmap", formats: [:json] %>
+  <% end %>
+  <%= tag.script type: "module", src: asset_path("glancer/application.js") %>
+</head>
+<body class="h-full bg-gray-900 text-gray-100">
+  <div class="flex h-full">
+    <%= render "glancer/chats/chat_sidebar" %>
+
+    <%= render "glancer/chats/show", 
+        chat: @chat || @chats.first, 
+        chats: @chats,
+        messages: (@chat || @chats.first)&.messages&.order(:created_at) || [] %>
+  </div>
+
+  <%= render "glancer/messages/message_info", message_info: nil %>
+
+  <!-- Script de debug (remover em produção) -->
+  <script type="module">
+    console.log("Importmap:", JSON.parse(document.querySelector('script[type="importmap"]').text));
+    console.log("Turbo disponível:", typeof Turbo);
+    console.log("Stimulus disponível:", typeof Stimulus);
+    
+    // Forçar dark mode
+    document.documentElement.classList.add('dark');
+  </script>
+</body>
+</html>

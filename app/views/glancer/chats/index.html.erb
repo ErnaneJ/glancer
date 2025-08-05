@@ -1,0 +1,10 @@
+<div class="flex h-full w-full">
+  <%= render "glancer/chats/chat_sidebar" %>
+  
+  <div id="main-content" class="flex-1 flex flex-col bg-white dark:bg-gray-900 relative">
+    <%= render "glancer/chats/show", 
+         chat: @chat || @chats.first,
+         chats: @chats,
+         messages: (@chat || @chats.first)&.messages || [] %>
+  </div>
+</div>

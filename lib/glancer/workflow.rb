@@ -26,6 +26,7 @@ module Glancer
 
       result = {
         question: question,
+        content: Glancer::Workflow::LLM.humanized_response(question, raw_data),
         sql: sql,
         raw_data: Glancer::Utils::ResultFormatter.normalize(raw_data),
         sources: embeddings.map do |e|

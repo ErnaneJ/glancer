@@ -1,0 +1,1 @@
+//= link glancer/application.js

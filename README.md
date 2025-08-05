@@ -2,6 +2,8 @@ bundle add glancer --path=...
 rails generate glancer:install
 rails db:migrate
 
+
+
 HuggingFaceEmbeddings(model_name="local_models/all-MiniLM-L6-v2") - (python)
 
 embedings for localmodels? 
