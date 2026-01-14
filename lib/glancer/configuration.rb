@@ -5,7 +5,7 @@ module Glancer
     LOG_VERBOSITY_LEVELS = %i[none info debug].freeze
 
     def initialize
-      self.adapter = Glancer::Configuration.infer_adapter
+      self.adapter = Glancer::Configuration.infer_adapter || :mysql2
       self.read_only_db = nil
       self.llm_provider = :gemini
       self.llm_model = "gemini-2.0-flash"
@@ -32,10 +32,10 @@ module Glancer
 
     # === WRITERS ===
     def adapter=(value)
-      unless ADAPTERS_SUPPORTED.include?(value)
+      unless ADAPTERS_SUPPORTED.join(", ").include?(value.to_s)
         raise ArgumentError, "adapter must be #{
           ADAPTERS_SUPPORTED.join(", ")
-        }"
+        }" || value.nil?
       end
 
       @adapter = value

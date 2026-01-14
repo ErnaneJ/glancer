@@ -43,6 +43,9 @@ module Glancer
     end
 
     def format_response(result)
+      puts "--------------------------------------"
+      puts result[:content]
+      puts "--------------------------------------"
       result[:content]
     end
   end
