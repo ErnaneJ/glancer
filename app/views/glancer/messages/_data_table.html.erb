@@ -1,0 +1,28 @@
+<% if data.present? && data.any? %>
+  <div class="table-scroll-wrapper rounded border border-gray-700 bg-gray-900/50">
+    <table class="min-w-full text-[11px] text-gray-300">
+      <thead class="bg-gray-800">
+        <tr>
+          <% data.first&.keys&.each do |key| %>
+            <th class="px-3 py-2 text-left font-semibold border-b border-gray-700"><%= key %></th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-800">
+        <% data.each do |row| %>
+          <tr>
+            <% row.values.each do |value| %>
+              <td class="px-3 py-1.5 whitespace-nowrap"><%= value %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    document.querySelector('[data-message-id="download-csv-<%= @message.id %>"]').classList.remove('hidden');
+  </script>
+<% else %>
+  <p class="border border-transparent border-t-gray-700 mt-2 pt-2 text-sm text-gray-400 text-center mb-2">No data available to display.</p>
+<% end %>

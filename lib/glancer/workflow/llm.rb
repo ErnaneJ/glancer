@@ -1,42 +1,65 @@
 module Glancer
   module Workflow
     class LLM
-      def self.humanized_response(question, data)
+      def self.humanized_response(question, data, sql)
         chat = RubyLLM.chat(
           provider: Glancer.configuration.llm_provider,
           model: Glancer.configuration.llm_model
         )
 
+        # Privacy layer: provide only a summary and a small sample to the LLM
+        # data_sample = data.first(3)
+        # data_summary = {
+        #   total_rows: data.size,
+        #   columns: data.first&.keys || [],
+        #   sample: data_sample
+        # }
+
         context = <<~PROMPT
-          You are **Glancer**, the final layer of a multi-agent AI system. Your job is to receive structured or semi-structured data and generate a final, human-friendly response in **Markdown format** based on the user's question.
+          You are **Glancer**, a professional SQL assistant.
 
-          ### Rules:
-          - You are part of an ongoing conversation. **Do not include greetings** (like "Hello" or "Hi") unless the user explicitly greets you.
-          - Only use the provided `data` if it is **relevant** to the user's question. If not, ignore it completely.
-          - Use clear, concise language to explain the result to the user.
-          - Format output in **Markdown**.
-          - If presenting tabular data, use **standard Markdown tables**, not code blocks.
-          - If showing code, wrap it in triple backticks (```) and specify the **correct language** (e.g., `sql`, `ruby`, `json`, etc).
-          - Do **not** encapsulate tables in code blocks — tables must render as proper Markdown tables.
-          - Never make assumptions beyond the data provided.
-          - Never show data in json, if necessary always show it in tables
-          - Do **not** suggest further actions or next steps. Just answer the question clearly and directly.
-          - Never wrap the entire response in a Markdown code block. Only use code blocks **within** the answer when showing actual code snippets. The main response must be rendered as normal Markdown text.
+          CRITICAL RULES:
+          - **Language Match**: You MUST detect the language of the user's question and respond ONLY in that language. If asked in Portuguese, respond in Portuguese.
+          - **Metadata Focus**: Explain the query
+          - **No Hallucinations**: You have no knowledge of the actual data rows. Do not assume values that are not in the provided metadata.
+          - **Formatting**: Use Markdown, bold text for metrics, and lists for clarity.
+          - Never show the SQL query because it is already provided below.
 
-          Data provided:
+          SQL EXECUTED:
+          ```sql
+          #{sql}
           ```
-          #{data}
-          ```
+
+          USER QUESTION:
+          #{question}
         PROMPT
 
         chat.with_instructions(context)
-
         response = chat.ask(question)
 
         response.content
       rescue StandardError => e
-        Glancer::Utils::Logger.error("LLM", "Failed to generate humanized response: #{e.message}")
-        Glancer::Utils::Logger.debug("LLM", "Backtrace:\n#{e.backtrace.join("\n")}")
+        Glancer::Utils::Logger.error("Workflow::LLM", "Humanized response failed: #{e.message}")
+        "I processed the query but failed to generate a humanized explanation. You can still see the raw data below."
+      end
+
+      def self.explain_error(question, error_message, sql)
+        chat = RubyLLM.chat(provider: Glancer.configuration.llm_provider, model: Glancer.configuration.llm_model)
+
+        prompt = <<~PROMPT
+          You are **Glancer**. The user asked: "#{question}".
+          We tried to generate SQL but failed after 3 attempts.
+          Last error: "#{error_message}"
+          Last SQL attempted: "#{sql}"
+
+          Your task:
+          1. Explain to the user in a friendly way that you couldn't process the request.
+          2. Point out what might be wrong (e.g., "I couldn't find a connection between Table A and B").
+          3. Suggest how the user could rephrase the question to be clearer.
+          4. Respond in the user's language.
+        PROMPT
+
+        chat.ask(prompt).content
       end
     end
   end

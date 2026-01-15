@@ -38,39 +38,37 @@ module Glancer
     end
 
     def search(query)
-      Glancer::Utils::Logger.info("Retriever",
-                                  "Searching for top #{Glancer.configuration.k} results with min_score: #{Glancer.configuration.min_score}")
-      Glancer::Utils::Logger.debug("Retriever", "Query: #{query}")
+      Glancer::Utils::Logger.info("Retriever", "Searching for top #{Glancer.configuration.k} results...")
 
       query_embedding = RubyLLM.embed(query, provider: Glancer.configuration.llm_provider).vectors
 
+      # @TODO Postgres with native search?
+      perform_ruby_search(query_embedding)
+    end
+
+    def perform_ruby_search(query_embedding)
       results = Glancer::Embedding.all.map do |record|
+        # Calculate similarity between query and stored document
         score = cosine_similarity(query_embedding, record.embedding)
         weighted_score = score * weight_for(record.source_type)
-
-        Glancer::Utils::Logger.debug("Retriever",
-                                     "Scored record from #{record.source_type} (#{record.source_path}) with raw=#{score.round(4)} weighted=#{weighted_score.round(4)}")
 
         { record: record, score: weighted_score }
       end
 
+      # Filter by min_score and sort by highest relevance
       top_matches = results
                     .select { |r| r[:score] >= Glancer.configuration.min_score }
                     .sort_by { |r| -r[:score] }
                     .first(Glancer.configuration.k)
                     .map do |r|
         r[:record].tap do |record|
+          # Attach the calculated score to the record for workflow analysis
           record.define_singleton_method(:score) { r[:score] }
         end
       end
 
-      Glancer::Utils::Logger.info("Retriever", "Found #{top_matches.size} matching document(s)")
-
+      Glancer::Utils::Logger.info("Retriever", "Found #{top_matches.size} relevant document(s)")
       top_matches
-    rescue StandardError => e
-      Glancer::Utils::Logger.error("Retriever", "Search failed: #{e.class} - #{e.message}")
-      Glancer::Utils::Logger.debug("Retriever", "Backtrace:\n#{e.backtrace.join("\n")}")
-      raise Glancer::Error.new("Search failed: #{e.message}"), cause: e
     end
 
     def weight_for(source_type)

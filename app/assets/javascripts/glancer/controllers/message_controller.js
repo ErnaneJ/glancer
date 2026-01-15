@@ -139,6 +139,72 @@ export default class extends Controller {
     contentElement.innerHTML = originalHTML;
   }
 
+  async runQuery(event) {
+    event.preventDefault();
+    const btn = event.currentTarget;
+    const messageId = btn.dataset.messageId;
+    const container = document.getElementById(`results-${messageId}`);
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+    container.innerHTML = '<div class="text-xs text-gray-500 animate-pulse">Executing query...</div>';
+    btn.querySelector('span').innerText = 'Running...';
+
+    try {
+      const response = await fetch(`/glancer/messages/${messageId}/run_sql`, {
+        method: "POST",
+        headers: {
+          "Accept": "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
+          "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        }
+      });
+
+      const html = await response.text();
+      Turbo.renderStreamMessage(html);
+      
+      btn.querySelector('span').innerText = 'Re-executar Consulta';
+    } catch (error) {
+      container.innerHTML = `<div class="text-xs text-red-500">Error: ${error.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50');
+    }
+  }
+
+  exportToCSV(event) {
+    event.preventDefault();
+    
+    const resultsContainer = this.element.querySelector('[data-message-target="resultsContainer"]');
+    const table = resultsContainer.querySelector('table');
+
+    if (!table) {
+      alert('No data available to export.');
+      return;
+    }
+
+    let csvContent = '';
+    const rows = table.querySelectorAll('tr');
+
+    rows.forEach((row) => {
+      const cols = row.querySelectorAll('th, td');
+      const rowData = Array.from(cols).map(col => {
+        const content = col.innerText.trim().replace(/"/g, '""');
+        return `"${content}"`;
+      }).join(',');
+      csvContent += rowData + '\r\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `glancer_results_${timestamp}.csv`);
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   stopPropagation(event) {
     event.stopPropagation();
   }

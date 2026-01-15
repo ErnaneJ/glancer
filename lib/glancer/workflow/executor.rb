@@ -37,7 +37,7 @@ module Glancer
           # Stop recursion if we reached the maximum number of attempts (3)
           if attempt >= 3
             Glancer::Utils::Logger.error("Workflow::Executor", "Final failure after #{attempt} attempts: #{e.message}")
-            raise Glancer::Error.new("Failed to generate a valid SQL after multiple attempts: #{e.message}")
+            return { error: true, message: e.message, last_sql: sql }
           end
 
           Glancer::Utils::Logger.warn("Workflow::Executor",

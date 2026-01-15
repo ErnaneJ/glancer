@@ -9,6 +9,7 @@ class CreateGlancerMessages < ActiveRecord::Migration[6.1]
       t.string :role
       t.text :content
       t.text :sql
+      t.boolean :successful, default: true
       t.timestamps
     end
   end

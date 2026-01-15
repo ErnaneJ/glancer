@@ -4,18 +4,33 @@ module Glancer
       @chat = Glancer::Chat.find(params[:chat_id])
       @message = @chat.messages.create!(message_params.merge(role: :user))
 
-      response = Glancer::Workflow.run(@message.content)
+      response = Glancer::Workflow.run(@chat.id, @message.content)
 
       @response_message = @chat.messages.create!(
         role: :assistant,
         content: format_response(response),
         sql: response[:sql],
-        user_message: @message
+        user_message: @message,
+        successful: response[:successful]
       )
 
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to glancer.chat_path(@chat) }
+      end
+    end
+
+    def run_sql
+      @message = Glancer::Message.find(params[:id])
+      # Executa o SQL mas não salva no banco de mensagens
+      @data = Glancer::Workflow::Executor.execute(@message.sql)
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update("results-#{@message.id}",
+                                                   partial: "glancer/messages/data_table",
+                                                   locals: { data: @data })
+        end
       end
     end
 
