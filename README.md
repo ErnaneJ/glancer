@@ -14,7 +14,7 @@ different models for embeddings and completions?
 
 
 
-
+@TODO? IDEIAS:
 - não passar os dados para o LLM, passar a consulta para ele e ele vai tentar explicar de forma humanizada como pensou para buscar os dados.
 - Sempre mostra uma tabela com o raw_data
 - tenta formatar para gerar gráficos ou algo interessante
