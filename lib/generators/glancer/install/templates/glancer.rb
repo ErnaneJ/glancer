@@ -1,88 +1,144 @@
-# Glancer configuration initializer
-#
-# This file allows you to customize how Glancer behaves in your Rails application.
-# You can control database access, LLM behavior, context indexing, logging, and more.
+# Glancer configuration
+# Full reference: https://github.com/ernanej/glancer
 
 Glancer.configure do |config|
-  # --------------------------------------
-  # Database Adapter
-  # --------------------------------------
-  # Force a specific database adapter if needed.
-  # Possible values: :postgres, :mysql, :sqlite
-  # If set to nil, Glancer will attempt to autodetect from ActiveRecord.
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Database
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Adapter used to execute queries. Auto-detected from ActiveRecord when nil.
+  # Accepted: :postgres | :mysql | :mysql2 | :sqlite
   config.adapter = nil
 
-  # --------------------------------------
-  # Read-only database URL (optional)
-  # --------------------------------------
-  # If you want Glancer to execute queries against a read-only replica,
-  # provide the full Rails-compatible database URL here.
-  # If nil, the primary connection is used.
-  config.read_only_db = nil # nil | URL | :read_only
+  # Optional read-only replica URL. Queries run against this connection when set.
+  # Accepts a full Rails database URL string or :read_only (uses current connection
+  # in read-only mode).
+  config.read_only_db = nil
 
-  # --------------------------------------
-  # LLM Provider and Model
-  # --------------------------------------
-  # Select which provider to use for generating responses.
-  # Supported: :gemini (default), :openai
-  config.llm_provider = :gemini # gemini | openai
+  # Maximum time a single SQL query may run before being killed.
+  # PostgreSQL uses SET statement_timeout; MySQL uses SET max_execution_time.
+  # SQLite has no server-side timeout enforcement.
+  config.statement_timeout = 30.seconds
 
-  # Name of the model to be used for completions (provider-specific).
+  # ─────────────────────────────────────────────────────────────────────────────
+  # LLM — Chat / SQL generation
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Provider for chat completions (SQL generation and response humanization).
+  # Accepted: :gemini | :openai | :openrouter
+  config.llm_provider = :gemini
+
+  # Model name for completions. Must be valid for the selected provider.
+  #   Gemini:     "gemini-2.0-flash", "gemini-1.5-pro", ...
+  #   OpenAI:     "gpt-4o", "gpt-4o-mini", ...
+  #   OpenRouter: "anthropic/claude-3.5-sonnet", "openai/gpt-4o", ...
   config.llm_model = "gemini-2.0-flash"
 
-  # --------------------------------------
-  # Permissions
-  # --------------------------------------
-  # Whether the LLM is allowed to use the application's schema to reason.
+  # ─────────────────────────────────────────────────────────────────────────────
+  # LLM — Embeddings
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Provider used exclusively for generating embeddings (indexing + retrieval).
+  # Defaults to llm_provider when nil. Useful when using OpenRouter for chat
+  # but a dedicated provider (Gemini/OpenAI) for embeddings, since OpenRouter
+  # does not reliably expose embedding models.
+  # Accepted: nil | :gemini | :openai | :openrouter
+  config.embedding_provider = nil
+
+  # Embedding model override. When nil, Glancer picks the best default for the
+  # resolved embedding provider:
+  #   Gemini:  "text-embedding-004"
+  #   OpenAI:  "text-embedding-3-large"
+  config.embedding_model = nil
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # API Keys
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Use provider-specific keys (preferred) or api_key as a generic fallback.
+  config.gemini_api_key     = ENV["GEMINI_API_KEY"]
+  # config.openai_api_key    = ENV["OPENAI_API_KEY"]
+  # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
+  # config.api_key           = ENV["LLM_API_KEY"]  # generic fallback for any provider
+
+  # ─── OpenRouter example ────────────────────────────────────────────────────
+  # config.llm_provider       = :openrouter
+  # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
+  # config.llm_model          = "anthropic/claude-3.5-sonnet"
+  # config.embedding_provider = :gemini          # recommended: dedicated embed provider
+  # config.gemini_api_key     = ENV["GEMINI_API_KEY"]
+  # config.embedding_model    = "text-embedding-004"
+  # ───────────────────────────────────────────────────────────────────────────
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Indexing permissions
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Allow Glancer to index db/schema.rb (table and column definitions).
   config.schema_permission = true
 
-  # Whether the LLM is allowed to analyze ActiveRecord models for structure and logic.
+  # Allow Glancer to index app/models/**/*.rb (associations, validations, scopes).
   config.models_permission = false
 
-  # --------------------------------------
-  # Prompt Context File
-  # --------------------------------------
-  # Optional Markdown/text file containing additional domain knowledge,
-  # rules or business logic to be embedded and indexed.
-  # Set to the relative path of your context file.
-  # By default the file is created (config/llm_context.glancer.md) but 
-  # If the file contains the line '--glancer-ignore' as the first line,
-  # it will be skipped from indexing.
+  # Path to a Markdown file with domain context: business rules, table aliases,
+  # common query patterns, etc. Add "--glancer-ignore" as the first line to skip.
   config.context_file_path = "config/glancer/llm_context.glancer.md"
 
-  # --------------------------------------
-  # Documents
-  # --------------------------------------
-  config.k = 10 # Number of relevant documents to retrieve for context
-  config.min_score = 0.6 # Minimum score for a document to be considered relevant
-  config.schema_documents_weight = 1.3 # Weight for schema documents
-  config.context_documents_weight = 1.2 # Weight for context documents
-  config.models_documents_weight = 1.1 # Weight for models documents
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Chunking (controls how documents are split before embedding)
+  # ─────────────────────────────────────────────────────────────────────────────
 
-  # --------------------------------------
+  # Maximum characters per chunk. Smaller chunks are more precise; larger chunks
+  # preserve more context. Default: 1000.
+  config.chunk_size = 1000
+
+  # Characters of overlap between consecutive chunks. Helps prevent context loss
+  # at chunk boundaries. Default: 150 (~15% of chunk_size).
+  config.chunk_overlap = 150
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Retrieval
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Number of top embedding chunks returned per query.
+  config.k = 10
+
+  # Minimum cosine similarity score [0.0–1.0] for a chunk to be included.
+  # Lower values return more results but may include noise.
+  config.min_score = 0.6
+
+  # Relevance multipliers per document type (must be ≥ 1.0).
+  # Higher weight = ranked higher in retrieved context.
+  config.schema_documents_weight  = 1.3  # db/schema.rb table definitions
+  config.context_documents_weight = 1.2  # custom context Markdown file
+  config.models_documents_weight  = 1.1  # ActiveRecord model files
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Conversation
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Number of past messages included in the prompt for multi-turn context.
+  config.history_limit = 6
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Caching
-  # --------------------------------------
-  # Time-to-live for cached workflow results (in seconds).
-  # Helps avoid repeated LLM calls for identical questions.
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # How long identical questions are served from the in-memory cache without
+  # calling the LLM again. Set to 0 to disable. Cache is process-local (not
+  # shared across Puma workers or restarts).
   config.workflow_cache_ttl = 1.minute
 
-  # --------------------------------------
-  # API Key for LLM provider (optional)
-  # --------------------------------------
-  # If your selected provider requires an API key, you can set it here.
-  # It's common to fetch this from environment variables.
-  config.api_key = ENV["LLM_API_KEY"]
-
-  # --------------------------------------
+  # ─────────────────────────────────────────────────────────────────────────────
   # Logging
-  # --------------------------------------
-  # Optional path to write logs to a separate file.
-  # If nil, logs go to Rails.logger (if available), or STDOUT otherwise.
-  config.log_output_path = nil # "logs/glancer.log"
+  # ─────────────────────────────────────────────────────────────────────────────
 
-  # Level of verbosity for Glancer logs:
-  # - :none   → disables logging
-  # - :info   → normal logging (default)
-  # - :debug  → verbose logging, useful for troubleshooting
-  config.log_verbosity = :info # :info | :debug | :none
+  # File path for Glancer logs. When nil, output goes to Rails.logger / STDOUT.
+  config.log_output_path = nil # e.g. "log/glancer.log"
+
+  # Log verbosity level.
+  # :none  → silent
+  # :info  → normal operational messages (default)
+  # :debug → verbose, includes prompts and full backtraces
+  config.log_verbosity = :info
 end

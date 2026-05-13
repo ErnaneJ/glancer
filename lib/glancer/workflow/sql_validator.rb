@@ -49,7 +49,7 @@ module Glancer
       end
 
       def self.system_schemas
-        case Glancer.configuration.adapter.to_s
+        case Glancer.configuration.resolved_adapter.to_s
         when "postgres", "postgresql"
           %w[information_schema pg_catalog pg_toast]
         when "mysql", "mysql2"

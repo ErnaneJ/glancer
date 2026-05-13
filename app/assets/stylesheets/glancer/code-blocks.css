@@ -1,24 +1,6 @@
-.message pre[lang] {
-  margin: 1rem 0;
-}
-
+/* Legacy selectors kept for backward compat with any host-app overrides */
 .message pre {
-  background: #1e293b;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin: 0.5rem 0;
-
-  white-space: pre-wrap;       /* Preserva espaços e quebra linha */
-  word-wrap: break-word;       /* Quebra palavras longas se necessário */
-  word-break: break-all;       /* Garante que o SQL não estoure */
-}
-
-.message code:not(pre code) {
-  background: rgba(56, 189, 248, 0.1);
-  padding: 0.2rem 0.4rem;
-  border-radius: 0.25rem;
-  font-family: monospace;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-wrap: break-word;
+  word-break: break-word;
 }

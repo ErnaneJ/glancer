@@ -1,3 +1,6 @@
+<%# Remove the thinking indicator added by JavaScript %>
+<%= turbo_stream.remove "thinking-indicator" %>
+
 <%= turbo_stream.append "chat-messages" do %>
   <%= render "glancer/messages/message", message: @message %>
 <% end %>
@@ -11,5 +14,5 @@
 <% end %>
 
 <%= turbo_stream.replace "message-info" do %>
-  <%= render "glancer/messages/message_info", message_info: @message_info %>
+  <%= render "glancer/messages/message_info", message_info: nil %>
 <% end %>

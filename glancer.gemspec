@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
 
   # Included files
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-    `git ls-files -z`.split("\x0").select { |f| f =~ /\.(rb|md|yml|erb|rake)$/ || f.start_with?("lib/") }
+    `git ls-files -z`.split("\x0").select { |f| f =~ /\.(rb|md|yml|erb|rake|js|css)$/ || f.start_with?("lib/") }
   end
 
   spec.bindir = "exe"

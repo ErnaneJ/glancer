@@ -1,7 +1,7 @@
 module Glancer
   class Configuration
     ADAPTERS_SUPPORTED = %i[postgres mysql mysql2 sqlite].freeze
-    LLM_PROVIDERS = %i[gemini openai].freeze
+    LLM_PROVIDERS = %i[gemini openai openrouter].freeze
     LOG_VERBOSITY_LEVELS = %i[none info debug].freeze
 
     def initialize
@@ -14,6 +14,9 @@ module Glancer
       self.workflow_cache_ttl = 5.minutes
       self.context_file_path = "config/glancer/llm_context.glancer.md"
       self.api_key = nil
+      self.gemini_api_key = nil
+      self.openai_api_key = nil
+      self.openrouter_api_key = nil
       self.log_output_path = nil
       self.log_verbosity = :info
       self.k = 5
@@ -21,14 +24,23 @@ module Glancer
       self.schema_documents_weight = 1.3
       self.context_documents_weight = 1.2
       self.models_documents_weight = 1.1
+      self.chunk_size = 1000
+      self.chunk_overlap = 150
+      self.history_limit = 6
+      self.statement_timeout = 30.seconds
+      self.embedding_provider = nil  # nil → uses llm_provider
+      self.embedding_model = nil     # nil → uses provider default
     end
 
     # === READERS ===
     attr_reader :adapter, :read_only_db, :llm_provider, :llm_model,
                 :schema_permission, :models_permission, :workflow_cache_ttl,
-                :context_file_path, :api_key, :log_output_path, :log_verbosity,
+                :context_file_path, :api_key, :gemini_api_key, :openai_api_key, :openrouter_api_key,
+                :log_output_path, :log_verbosity,
                 :k, :min_score,
-                :schema_documents_weight, :context_documents_weight, :models_documents_weight
+                :schema_documents_weight, :context_documents_weight, :models_documents_weight,
+                :chunk_size, :chunk_overlap, :history_limit, :statement_timeout,
+                :embedding_provider, :embedding_model
 
     # === WRITERS ===
     def adapter=(value)
@@ -95,6 +107,24 @@ module Glancer
       @api_key = value
     end
 
+    def gemini_api_key=(value)
+      raise ArgumentError, "gemini_api_key must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @gemini_api_key = value
+    end
+
+    def openai_api_key=(value)
+      raise ArgumentError, "openai_api_key must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @openai_api_key = value
+    end
+
+    def openrouter_api_key=(value)
+      raise ArgumentError, "openrouter_api_key must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @openrouter_api_key = value
+    end
+
     def log_output_path=(value)
       raise ArgumentError, "log_output_path must be nil or a String" unless value.nil? || value.is_a?(String)
 
@@ -151,10 +181,61 @@ module Glancer
       @models_documents_weight = value
     end
 
+    def chunk_size=(value)
+      raise ArgumentError, "chunk_size must be an integer ≥ 100" unless value.is_a?(Integer) && value >= 100
+
+      @chunk_size = value
+    end
+
+    def chunk_overlap=(value)
+      raise ArgumentError, "chunk_overlap must be an integer ≥ 0" unless value.is_a?(Integer) && value >= 0
+
+      @chunk_overlap = value
+    end
+
+    def history_limit=(value)
+      raise ArgumentError, "history_limit must be an integer ≥ 1" unless value.is_a?(Integer) && value >= 1
+
+      @history_limit = value
+    end
+
+    def statement_timeout=(value)
+      raise ArgumentError, "statement_timeout must respond to to_i" unless value.respond_to?(:to_i)
+
+      @statement_timeout = value
+    end
+
+    def embedding_provider=(value)
+      unless value.nil? || LLM_PROVIDERS.include?(value)
+        raise ArgumentError, "embedding_provider must be nil or one of: #{LLM_PROVIDERS.join(', ')}"
+      end
+
+      @embedding_provider = value
+    end
+
+    def embedding_model=(value)
+      raise ArgumentError, "embedding_model must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @embedding_model = value
+    end
+
+    # Returns the provider to use for embedding calls (falls back to llm_provider).
+    def resolved_embedding_provider
+      embedding_provider || llm_provider
+    end
+
+    # Returns the adapter in use, auto-detecting from ActiveRecord when nil.
+    # Normalizes "postgresql" → :postgres so callers don't need to handle both.
+    def resolved_adapter
+      raw = adapter || self.class.infer_adapter || :mysql2
+      raw.to_s == "postgresql" ? :postgres : raw
+    end
+
     # === Auxiliary methods ===
 
     def self.infer_adapter
-      ActiveRecord::Base.connection.adapter_name.downcase.to_sym
+      raw = ActiveRecord::Base.connection.adapter_name.downcase.to_sym
+      raw.to_s == "postgresql" ? :postgres : raw
     rescue StandardError
       nil
     end

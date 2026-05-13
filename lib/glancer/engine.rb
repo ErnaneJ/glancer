@@ -42,30 +42,21 @@ module Glancer
       Glancer::Utils::Logger.info("Engine", "Configuring RubyLLM with Glancer settings...")
 
       RubyLLM.configure do |config|
-        provider = Glancer.configuration.llm_provider.to_sym
-        Glancer::Utils::Logger.debug("Engine", "Selected LLM provider: #{provider}")
+        glancer_cfg = Glancer.configuration
+        provider = glancer_cfg.llm_provider.to_sym
+        embed_provider = glancer_cfg.resolved_embedding_provider.to_sym
 
-        case provider
-        when :gemini
-          config.gemini_api_key = Glancer.configuration.api_key
-          if config.gemini_api_key.nil? || config.gemini_api_key.empty?
-            Glancer::Utils::Logger.warn("Engine", "Gemini API key is not set. Please configure it in Glancer settings.")
-            raise Glancer::Error, "Gemini API key is required but not configured."
-          end
-          config.default_embedding_model = "text-embedding-004"
-          Glancer::Utils::Logger.info("Engine", "Configured Gemini provider for RubyLLM.")
-        when :openai
-          config.openai_api_key = Glancer.configuration.api_key
-          if config.openai_api_key.nil? || config.openai_api_key.empty?
-            Glancer::Utils::Logger.warn("Engine", "OpenAI API key is not set. Please configure it in Glancer settings.")
-            raise Glancer::Error, "OpenAI API key is required but not configured."
-          end
-          config.default_embedding_model = "text-embedding-3-large"
-          Glancer::Utils::Logger.info("Engine", "Configured OpenAI provider for RubyLLM.")
-        else
-          Glancer::Utils::Logger.error("Engine", "Unsupported LLM provider: #{provider.inspect}")
-          raise Glancer::Error, "Unsupported LLM provider: #{provider.inspect}"
-        end
+        Glancer::Utils::Logger.debug("Engine", "LLM provider: #{provider}, embedding provider: #{embed_provider}")
+
+        Glancer::Engine.configure_provider_key(config, glancer_cfg, provider)
+        Glancer::Engine.configure_provider_key(config, glancer_cfg, embed_provider) if embed_provider != provider
+
+        default_embed_model = Glancer::Engine.default_embedding_model_for(embed_provider)
+        config.default_embedding_model = glancer_cfg.embedding_model || default_embed_model
+
+        Glancer::Utils::Logger.info("Engine",
+                                    "RubyLLM configured — chat: #{provider}/#{glancer_cfg.llm_model}, " \
+                                    "embeddings: #{embed_provider}/#{config.default_embedding_model}")
       end
 
       Glancer::Utils::Logger.info("Engine", "RubyLLM configuration completed.")
@@ -73,6 +64,36 @@ module Glancer
       Glancer::Utils::Logger.error("Engine", "Failed to configure RubyLLM: #{e.class} - #{e.message}")
       Glancer::Utils::Logger.debug("Engine", "Backtrace:\n#{e.backtrace.join("\n")}")
       raise Glancer::Error.new("RubyLLM configuration failed: #{e.message}"), cause: e
+    end
+    def self.configure_provider_key(config, glancer_cfg, provider)
+      case provider
+      when :gemini
+        key = glancer_cfg.gemini_api_key || glancer_cfg.api_key
+        raise Glancer::Error, "Gemini API key is required but not configured." if key.nil? || key.empty?
+
+        config.gemini_api_key = key
+      when :openai
+        key = glancer_cfg.openai_api_key || glancer_cfg.api_key
+        raise Glancer::Error, "OpenAI API key is required but not configured." if key.nil? || key.empty?
+
+        config.openai_api_key = key
+      when :openrouter
+        key = glancer_cfg.openrouter_api_key || glancer_cfg.api_key
+        raise Glancer::Error, "OpenRouter API key is required but not configured." if key.nil? || key.empty?
+
+        config.openrouter_api_key = key
+      else
+        raise Glancer::Error, "Unsupported LLM provider: #{provider.inspect}"
+      end
+    end
+
+    def self.default_embedding_model_for(provider)
+      case provider.to_sym
+      when :gemini     then "text-embedding-004"
+      when :openai     then "text-embedding-3-large"
+      when :openrouter then "text-embedding-3-small" # set embedding_provider: :openai for better support
+      else "text-embedding-004"
+      end
     end
   end
 end

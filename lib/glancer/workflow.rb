@@ -10,7 +10,7 @@ module Glancer
       end
 
       chat = Glancer::Chat.find(chat_id)
-      history = chat.messages.order(created_at: :desc).limit(6).reverse
+      history = chat.messages.order(created_at: :desc).limit(Glancer.configuration.history_limit).reverse
 
       Glancer::Utils::Logger.info("Workflow", "No cached result. Performing retrieval and SQL generation...")
 

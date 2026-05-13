@@ -17,9 +17,8 @@ module Glancer
         begin
           result = nil
           Glancer::Utils::Transaction.make do |connection|
-            # Execute the query and convert the ActiveRecord::Result to an Array of Hashes
+            apply_statement_timeout(connection)
             result = connection.exec_query(sql_with_comment).to_a
-            # Always rollback to ensure data integrity during read-only operations
             raise ActiveRecord::Rollback
           end
 
@@ -27,7 +26,7 @@ module Glancer
           Glancer::Audit.create!(
             question: original_question,
             sql: sql_with_comment,
-            adapter: Glancer.configuration.adapter,
+            adapter: Glancer.configuration.resolved_adapter,
             run_id: run_id,
             executed_at: Time.current
           )
@@ -49,6 +48,20 @@ module Glancer
           # Retry execution with the corrected SQL
           execute(fixed_sql, original_question: original_question, attempt: attempt + 1)
         end
+      end
+
+      def self.apply_statement_timeout(connection)
+        timeout_ms = Glancer.configuration.statement_timeout.to_i * 1000
+        adapter = Glancer.configuration.resolved_adapter.to_s
+
+        case adapter
+        when "postgres", "postgresql"
+          connection.execute("SET statement_timeout = #{timeout_ms}")
+        when "mysql", "mysql2"
+          connection.execute("SET max_execution_time = #{timeout_ms}")
+        end
+      rescue StandardError => e
+        Glancer::Utils::Logger.warn("Workflow::Executor", "Could not set statement timeout: #{e.message}")
       end
     end
   end

@@ -4,7 +4,9 @@ module Glancer
       def self.build_sql(question, embeddings, history: [])
         Glancer::Utils::Logger.info("Workflow::Builder", "Generating SQL from question: #{question.inspect}")
 
-        prompt = Glancer::Workflow::PromptBuilder.call(question, embeddings, history: history)
+        prompt = Glancer::Workflow::PromptBuilder.call(
+          question, embeddings, history: history, few_shot_examples: recent_examples
+        )
         Glancer::Utils::Logger.debug("Workflow::Builder", "Generated prompt for SQL generation:\n#{prompt}")
 
         chat = RubyLLM.chat(
@@ -24,6 +26,17 @@ module Glancer
         raise Glancer::Error.new("SQL generation failed: #{e.message}"), cause: e
       end
 
+      def self.recent_examples
+        Glancer::Audit
+          .where(adapter: Glancer.configuration.resolved_adapter.to_s)
+          .where.not(question: [nil, ""])
+          .order(executed_at: :desc)
+          .limit(3)
+          .pluck(:question, :sql)
+      rescue StandardError
+        []
+      end
+
       def self.fix_sql(failed_sql, error_message)
         Glancer::Utils::Logger.info("Workflow::Builder", "Attempting to fix failed SQL...")
 
@@ -36,7 +49,7 @@ module Glancer
           The database returned the following error message:
           "#{error_message}"
 
-          Your task is to correct the SQL query so it becomes valid for the #{Glancer.configuration.adapter.upcase} adapter.
+          Your task is to correct the SQL query so it becomes valid for the #{Glancer.configuration.resolved_adapter.to_s.upcase} adapter.
           - Return ONLY the corrected SQL.
           - Do not provide explanations or comments.
           - Ensure it remains a safe SELECT statement.

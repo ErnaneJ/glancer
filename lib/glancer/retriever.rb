@@ -14,7 +14,7 @@ module Glancer
         Glancer::Utils::Logger.debug("Retriever",
                                      "Embedding chunk ##{idx + 1} (#{data[:source_type]} - #{data[:source_path]}): '#{preview}...'")
 
-        vector = RubyLLM.embed(chunk, provider: Glancer.configuration.llm_provider).vectors
+        vector = RubyLLM.embed(chunk, provider: Glancer.configuration.resolved_embedding_provider).vectors
 
         Glancer::Utils::Logger.debug("Retriever",
                                      "Vector size: #{vector.size}, example values: #{vector.first(5).inspect}")
@@ -40,7 +40,7 @@ module Glancer
     def search(query)
       Glancer::Utils::Logger.info("Retriever", "Searching for top #{Glancer.configuration.k} results...")
 
-      query_embedding = RubyLLM.embed(query, provider: Glancer.configuration.llm_provider).vectors
+      query_embedding = RubyLLM.embed(query, provider: Glancer.configuration.resolved_embedding_provider).vectors
 
       # @TODO Postgres with native search?
       perform_ruby_search(query_embedding)

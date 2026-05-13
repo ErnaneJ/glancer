@@ -40,8 +40,16 @@ module Glancer
         raise Glancer::Error.new("Context indexing failed: #{e.message}"), cause: e
       end
 
-      def split_into_chunks(text, max_length = 1000)
-        text.scan(/.{1,#{max_length}}/m)
+      def split_into_chunks(text)
+        size = Glancer.configuration.chunk_size
+        overlap = Glancer.configuration.chunk_overlap
+        chunks = []
+        start = 0
+        while start < text.length
+          chunks << text[start, size]
+          start += size - overlap
+        end
+        chunks
       end
     end
   end

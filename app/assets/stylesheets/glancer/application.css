@@ -1,8 +1,9 @@
+/* Smooth scroll for the messages container */
 #chat-messages {
   scroll-behavior: smooth;
-  padding-bottom: 120px;
 }
 
+/* Typewriter cursor */
 .cursor-blink {
   animation: blink 1s step-end infinite;
   color: #a855f7;
@@ -13,13 +14,57 @@
   50% { opacity: 0 }
 }
 
-hr {
-  border: none;
-  border-top: 1px solid #2B303B;
-  margin: 1rem 0 !important;
+/* Links inside message content */
+.message-content a {
+  color: #9333ea;
+  text-decoration: underline;
+  text-decoration-color: rgba(147, 51, 234, 0.3);
+  text-underline-offset: 2px;
 }
 
-.message a {
+.dark .message-content a {
   color: #c084fc;
-  text-decoration: none;
+  text-decoration-color: rgba(192, 132, 252, 0.3);
+}
+
+/* Override Prism theme to integrate with our design */
+pre[class*="language-"] {
+  background: #1e1e2e !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  font-size: 0.75rem !important;
+  line-height: 1.6 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+}
+
+code[class*="language-"] {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace !important;
+  font-size: 0.75rem !important;
+}
+
+/* Inline code (not inside pre) */
+.message-content code:not(pre code) {
+  background: rgba(147, 51, 234, 0.08);
+  color: #9333ea;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8em;
+}
+
+.dark .message-content code:not(pre code) {
+  background: rgba(192, 132, 252, 0.1);
+  color: #c084fc;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid;
+  border-color: #e5e7eb;
+  margin: 0.75rem 0;
+}
+
+.dark hr {
+  border-color: #1f2937;
 }

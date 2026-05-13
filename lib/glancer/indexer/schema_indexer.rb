@@ -36,8 +36,11 @@ module Glancer
           end
         end.compact
 
+        fk_chunk = extract_foreign_keys(content, schema_file)
+        indexed_chunks << fk_chunk if fk_chunk
+
         Glancer::Utils::Logger.info("Indexer::SchemaIndexer",
-                                    "Completed schema indexing. Total indexed tables: #{indexed_chunks.size}")
+                                    "Completed schema indexing. Total indexed chunks: #{indexed_chunks.size}")
 
         indexed_chunks
       rescue StandardError => e
@@ -56,6 +59,34 @@ module Glancer
 
       def extract_table_name(chunk)
         chunk[/create_table ["']?([a-zA-Z0-9_]+)["']?/, 1]
+      end
+
+      def extract_foreign_keys(schema_text, schema_file)
+        lines = schema_text.lines.select { |l| l.strip.start_with?("add_foreign_key") }
+        return nil if lines.empty?
+
+        relationships = lines.filter_map do |line|
+          # add_foreign_key "orders", "users", column: "user_id"
+          # add_foreign_key "order_items", "orders"
+          m = line.match(/add_foreign_key ["'](\w+)["'],\s*["'](\w+)["'](?:.*column:\s*["'](\w+)["'])?/)
+          next unless m
+
+          child_table = m[1]
+          parent_table = m[2]
+          column = m[3] || "#{parent_table.singularize}_id"
+          "#{child_table}.#{column} → #{parent_table}.id"
+        end
+
+        return nil if relationships.empty?
+
+        content = "# Foreign Key Relationships\n#{relationships.join("\n")}"
+        Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Extracted #{relationships.size} foreign key(s)")
+
+        {
+          content: content,
+          source_type: "schema",
+          source_path: "#{schema_file}#foreign_keys"
+        }
       end
     end
   end

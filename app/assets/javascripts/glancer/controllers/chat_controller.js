@@ -1,61 +1,67 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  connect() {
-    console.log("[ChatController] Connected!")
-    this.setupEventListeners();
-  }
-  
-  disconnect() {
-    this.removeEventListeners();
-  }
-  
-  setupEventListeners() {
-    document.addEventListener("new-chat", this.handleNewChat.bind(this))
-    document.addEventListener("chat-selected", this.handleChatSelected.bind(this))
-  }
-  
-  removeEventListeners() {
-    document.removeEventListener("new-chat", this.handleNewChat.bind(this))
-    document.removeEventListener("chat-selected", this.handleChatSelected.bind(this))
-  }
-  
   create(event) {
     event.preventDefault();
 
-    fetch(event.target.href, {
+    fetch(event.currentTarget.href || event.target.href, {
       method: "POST",
       headers: {
-        "Accept": "text/vnd.turbo-stream.html, text/html, application/xhtml+xml",
-        "X-CSRF-Token": document.querySelector("[name='csrf-token']").content
+        "Accept": "text/vnd.turbo-stream.html",
+        "X-CSRF-Token": this.csrfToken,
       }
     })
-    .then(response => response.text())
+    .then(r => r.text())
     .then(html => Turbo.renderStreamMessage(html))
-    .catch(error => console.error("Error creating chat:", error))
+    .catch(() => this.toast("Failed to create chat", "error"));
+  }
+
+  select(event) {
+    event.preventDefault();
+    const chatId = event.currentTarget.dataset.chatId;
+    this.closeSidebar();
+    Turbo.visit(`/glancer/chats/${chatId}`);
   }
 
   copy(event) {
     const button = event.currentTarget;
     const content = button.dataset.message;
 
-    navigator.clipboard.writeText(content).then(() => {
-      button.classList.add('text-green-500');
-      setTimeout(() => button.classList.remove('text-green-500'), 1000);
-    });
+    navigator.clipboard.writeText(content)
+      .then(() => {
+        this.toast("Copied to clipboard", "success");
+      })
+      .catch(() => {
+        this.toast("Copy failed", "error");
+      });
   }
-    
-  select(event) {
-    event.preventDefault()
-    const chatId = event.currentTarget.dataset.chatId
-    Turbo.visit(`/glancer/chats/${chatId}`)
+
+  toggleTheme() {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("glancer-theme", isDark ? "dark" : "light");
   }
-  
-  handleNewChat(event) {
-    console.log("New chat event received", event.detail)
+
+  openSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    sidebar?.classList.remove("-translate-x-full");
+    overlay?.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
   }
-  
-  handleChatSelected(event) {
-    console.log("Chat selected", event.detail.chatId)
+
+  closeSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+    sidebar?.classList.add("-translate-x-full");
+    overlay?.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  toast(message, type = "info") {
+    document.dispatchEvent(new CustomEvent("glancer:toast", { detail: { message, type } }));
+  }
+
+  get csrfToken() {
+    return document.querySelector("[name='csrf-token']")?.content ?? "";
   }
 }
