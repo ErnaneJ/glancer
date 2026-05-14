@@ -1,0 +1,111 @@
+<% content_for :main_content do %>
+  <div class="flex flex-col h-full overflow-hidden">
+
+    <%# Header %>
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <%= link_to glancer.root_path,
+            class: "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+            aria: { label: t("glancer.schema.back") },
+            data: { turbo: false } do %>
+          <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-arrow-left"/></svg>
+        <% end %>
+        <div>
+          <h1 class="text-sm font-semibold text-gray-900 dark:text-white"><%= t("glancer.schema.title") %></h1>
+          <p class="text-xs text-gray-400 dark:text-gray-500"><%= t("glancer.schema.tables_count", count: @tables.size) %></p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex flex-col flex-1 overflow-hidden">
+      <%# Filter input %>
+      <div class="px-6 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" aria-hidden="true">
+            <use href="#icon-filter"/>
+          </svg>
+          <input type="text"
+                 id="table-filter"
+                 placeholder="<%= t('glancer.schema.filter') %>"
+                 oninput="filterTables(this.value)"
+                 class="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+        </div>
+      </div>
+
+      <%# Tables — CSS masonry via columns %>
+      <div class="flex-1 overflow-y-auto px-6 py-4">
+        <div id="tables-grid" style="columns: 320px; column-gap: 1rem;">
+          <% @tables.each do |table| %>
+            <div class="table-card rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden break-inside-avoid mb-4"
+                 data-table="<%= table[:name] %>">
+              <%# Card header %>
+              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2">
+                  <svg class="w-3.5 h-3.5 text-primary-500" aria-hidden="true"><use href="#icon-table"/></svg>
+                  <span class="text-sm font-semibold text-gray-800 dark:text-gray-100"><%= table[:name] %></span>
+                </div>
+                <span class="text-[11px] text-gray-400 dark:text-gray-500"><%= table[:columns].size %> <%= t("glancer.schema.cols") %></span>
+              </div>
+
+              <%# Column list %>
+              <div class="divide-y divide-gray-50 dark:divide-gray-800">
+                <% table[:columns].each_with_index do |col, idx| %>
+                  <div class="flex items-center justify-between px-4 py-2 <%= idx.even? ? '' : 'bg-gray-50/50 dark:bg-gray-800/30' %>">
+                    <div class="flex items-center gap-2">
+                      <% if col[:name] == "id" %>
+                        <span class="text-[9px] font-bold text-primary-500 bg-primary-50 dark:bg-primary-950 px-1.5 py-0.5 rounded uppercase">PK</span>
+                      <% elsif table[:foreign_keys].any? { |fk| fk[:from_column] == col[:name] } %>
+                        <span class="text-[9px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-950 px-1.5 py-0.5 rounded uppercase">FK</span>
+                      <% else %>
+                        <span class="w-4"></span>
+                      <% end %>
+                      <span class="text-xs text-gray-700 dark:text-gray-300 font-mono"><%= col[:name] %></span>
+                    </div>
+                    <span class="text-[11px] text-gray-400 dark:text-gray-500 font-mono truncate max-w-[120px]"><%= col[:type] %></span>
+                  </div>
+                <% end %>
+              </div>
+
+              <%# FK relationships %>
+              <% if table[:foreign_keys].any? %>
+                <div class="px-4 py-2 bg-blue-50/50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900">
+                  <% table[:foreign_keys].each do |fk| %>
+                    <p class="text-[11px] text-blue-600 dark:text-blue-400 font-mono">
+                      <%= fk[:from_column] %> → <%= fk[:to_table] %>.<%= fk[:to_column] %>
+                    </p>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div id="no-tables-msg" class="hidden py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+          <%= t("glancer.schema.no_tables", term: "") %><span id="filter-term"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function filterTables(query) {
+      var term = query.trim().toLowerCase();
+      var cards = document.querySelectorAll('.table-card');
+      var visible = 0;
+
+      cards.forEach(function(card) {
+        var name = card.dataset.table || '';
+        var match = !term || name.includes(term);
+        card.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+
+      var noMsg = document.getElementById('no-tables-msg');
+      var filterTerm = document.getElementById('filter-term');
+      noMsg.classList.toggle('hidden', visible > 0 || !term);
+      if (filterTerm) filterTerm.textContent = query;
+    }
+  </script>
+<% end %>

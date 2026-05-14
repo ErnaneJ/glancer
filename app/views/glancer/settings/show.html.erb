@@ -1,0 +1,283 @@
+<% content_for :main_content do %>
+  <div class="flex flex-col h-full overflow-hidden">
+
+    <%# Header %>
+    <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0">
+      <%= link_to glancer.root_path,
+          class: "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+          aria: { label: t("glancer.nav.back_to_chat") },
+          data: { turbo: false } do %>
+        <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-arrow-left"/></svg>
+      <% end %>
+      <h1 class="text-sm font-semibold text-gray-900 dark:text-white"><%= t("glancer.settings.title") %></h1>
+    </div>
+
+    <%# Body %>
+    <div class="flex-1 overflow-y-auto px-6 py-6">
+      <div class="max-w-xl mx-auto space-y-8">
+
+        <% if flash[:notice] %>
+          <div class="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-400">
+            <svg class="w-4 h-4 flex-shrink-0" aria-hidden="true"><use href="#icon-check"/></svg>
+            <%= flash[:notice] %>
+          </div>
+        <% end %>
+
+        <%# ── Editable preferences ─────────────────────────────────────────────── %>
+        <section>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Preferences</h2>
+
+          <%= form_with url: glancer.settings_path, method: :patch, data: { turbo: false } do |f| %>
+            <div class="space-y-5">
+
+              <%# Interface language %>
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                  <%= t("glancer.settings.language.label") %>
+                </label>
+                <select name="settings[ui_language]"
+                        class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="en" <%= "selected" if @settings[:ui_language] == "en" %>><%= t("glancer.settings.language.en") %></option>
+                  <option value="pt-BR" <%= "selected" if @settings[:ui_language] == "pt-BR" %>><%= t("glancer.settings.language.pt_br") %></option>
+                  <option value="es" <%= "selected" if @settings[:ui_language] == "es" %>><%= t("glancer.settings.language.es") %></option>
+                </select>
+              </div>
+
+              <%# Speech recognition language %>
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                  <%= t("glancer.settings.speech.label") %>
+                </label>
+                <select name="settings[speech_language]"
+                        class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <option value="auto" <%= "selected" if @settings[:speech_language] == "auto" %>><%= t("glancer.settings.speech.auto") %></option>
+                  <option value="en-US" <%= "selected" if @settings[:speech_language] == "en-US" %>><%= t("glancer.settings.speech.en_us") %></option>
+                  <option value="pt-BR" <%= "selected" if @settings[:speech_language] == "pt-BR" %>><%= t("glancer.settings.speech.pt_br") %></option>
+                  <option value="es-ES" <%= "selected" if @settings[:speech_language] == "es-ES" %>><%= t("glancer.settings.speech.es_es") %></option>
+                </select>
+              </div>
+
+              <%# Custom LLM instructions %>
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                  <%= t("glancer.settings.instructions.label") %>
+                </label>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-2">
+                  <%= t("glancer.settings.instructions.help") %>
+                </p>
+                <textarea name="settings[custom_instructions]"
+                          rows="6"
+                          placeholder="<%= t("glancer.settings.instructions.placeholder") %>"
+                          class="w-full px-3 py-2 text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y min-h-[120px]"><%= @settings[:custom_instructions] %></textarea>
+              </div>
+
+              <%# Save button %>
+              <div class="pt-1">
+                <button type="submit"
+                        class="px-5 py-2 text-sm font-medium rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white transition-colors">
+                  <%= t("glancer.settings.save") %>
+                </button>
+              </div>
+
+            </div>
+          <% end %>
+        </section>
+
+        <%# ── Read-only configuration ──────────────────────────────────────────── %>
+        <section>
+          <div class="flex items-center gap-2 mb-4">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Configuration</h2>
+            <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500">config/initializers/glancer.rb</span>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+
+            <%# ─ LLM ─ %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — defaults</span>
+            </div>
+
+            <% cfg = @glancer_config %>
+
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">llm_provider</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.llm_provider %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">llm_model</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.llm_model %></span>
+            </div>
+
+            <%# SQL role %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — SQL generation</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">sql_provider</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.sql_provider || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_provider} (default)</span>).html_safe %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">sql_model</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.sql_model || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_model} (default)</span>).html_safe %>
+              </span>
+            </div>
+
+            <%# Chat role %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — chat responses</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">chat_provider</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.chat_provider || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_provider} (default)</span>).html_safe %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">chat_model</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.chat_model || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_model} (default)</span>).html_safe %>
+              </span>
+            </div>
+
+            <%# Embeddings %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — embeddings</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">embedding_provider</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.embedding_provider || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_provider} (default)</span>).html_safe %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">embedding_model</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.embedding_model || %(<span class="text-gray-400 dark:text-gray-600 italic">provider default</span>).html_safe %>
+              </span>
+            </div>
+
+            <%# Database %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Database</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">adapter</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.resolved_adapter %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">read_only_db</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.read_only_db ? "configured" : %(<span class="text-gray-400 dark:text-gray-600 italic">not set</span>).html_safe %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">statement_timeout</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.statement_timeout.to_i %>s</span>
+            </div>
+
+            <%# Retrieval %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Retrieval</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">k</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.k %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">min_score</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.min_score %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">history_limit</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.history_limit %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">workflow_cache_ttl</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.workflow_cache_ttl.to_i %>s</span>
+            </div>
+
+            <%# Indexing %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Indexing</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">schema_permission</span>
+              <span class="<%= cfg.schema_permission ? 'text-green-600 dark:text-green-400' : 'text-gray-400' %> text-xs font-medium">
+                <%= cfg.schema_permission ? "enabled" : "disabled" %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">models_permission</span>
+              <span class="<%= cfg.models_permission ? 'text-green-600 dark:text-green-400' : 'text-gray-400' %> text-xs font-medium">
+                <%= cfg.models_permission ? "enabled" : "disabled" %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">chunk_size</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.chunk_size %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">chunk_overlap</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.chunk_overlap %></span>
+            </div>
+
+            <%# Logging %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Logging</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">log_verbosity</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= cfg.log_verbosity %></span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">log_output_path</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.log_output_path || %(<span class="text-gray-400 dark:text-gray-600 italic">Rails.logger</span>).html_safe %>
+              </span>
+            </div>
+
+            <% if cfg.resolved_blazer_path.present? %>
+              <%# Integrations %>
+              <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Integrations</span>
+              </div>
+              <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+                <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">blazer_path</span>
+                <span class="text-xs font-medium text-green-600 dark:text-green-400"><%= cfg.resolved_blazer_path %></span>
+              </div>
+            <% end %>
+
+          </div>
+
+          <p class="mt-3 text-[11px] text-gray-400 dark:text-gray-600">
+            These values are set in your initializer and require a server restart to take effect.
+          </p>
+        </section>
+
+        <%# ── Embeddings stats ─────────────────────────────────────────────────── %>
+        <% embedding_count = Glancer::Embedding.count rescue 0 %>
+        <% if embedding_count > 0 %>
+          <section>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-4">Index</h2>
+            <div class="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+              <% Glancer::Embedding.group(:source_type).count.each do |type, count| %>
+                <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+                  <span class="text-xs text-gray-500 dark:text-gray-400 font-mono"><%= type %></span>
+                  <span class="text-xs font-medium text-gray-800 dark:text-gray-200"><%= count %> chunk<%= count == 1 ? "" : "s" %></span>
+                </div>
+              <% end %>
+              <div class="grid grid-cols-2 px-4 py-2.5 items-center bg-gray-50 dark:bg-gray-800/60">
+                <span class="text-xs font-semibold text-gray-500 dark:text-gray-400">Total</span>
+                <span class="text-xs font-semibold text-gray-800 dark:text-gray-200"><%= embedding_count %> chunks</span>
+              </div>
+            </div>
+          </section>
+        <% end %>
+
+      </div>
+    </div>
+  </div>
+<% end %>
