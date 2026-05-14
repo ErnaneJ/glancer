@@ -24,7 +24,19 @@ module Glancer
       Glancer::Utils::Logger.debug("Workflow", "Extracted SQL:\n#{sql}")
 
       Workflow::SQLSanitizer.ensure_safe!(sql)
-      Workflow::SQLValidator.validate_tables_exist!(sql)
+
+      begin
+        Workflow::SQLValidator.validate_tables_exist!(sql)
+      rescue Glancer::Error => e
+        Glancer::Utils::Logger.warn("Workflow", "Table validation failed: #{e.message}. Returning friendly response.")
+        explanation = Glancer::Workflow::LLM.explain_missing_tables(question, e.message)
+        return {
+          question: question,
+          content: explanation,
+          sql: sql,
+          successful: false
+        }
+      end
 
       raw_data = Workflow::Executor.execute(sql, original_question: question)
 

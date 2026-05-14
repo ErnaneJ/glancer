@@ -40,3 +40,5 @@ require "glancer/workflow/sql_extractor" # Glancer::Workflow::SqlExtractor
 require "glancer/workflow/sql_sanitizer" # Glancer::Workflow::SqlSanitizer
 require "glancer/workflow/sql_validator" # Glancer::Workflow::SqlValidator
 require "glancer/workflow/llm" # Glancer::Workflow::LLM
+
+require "glancer/chart_analyzer" # Glancer::ChartAnalyzer

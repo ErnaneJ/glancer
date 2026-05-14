@@ -6,8 +6,13 @@ module Glancer
 
         now = Time.current.strftime("%Y-%m-%d %H:%M:%S")
         adapter = Glancer.configuration.resolved_adapter
+        db_name = begin
+          ActiveRecord::Base.connection.current_database
+        rescue StandardError
+          "unknown"
+        end
 
-        Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Current time: #{now}, Adapter: #{adapter}")
+        Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Current time: #{now}, Adapter: #{adapter}, DB: #{db_name}")
 
         history_context = history.map do |msg|
           if msg.role == "assistant" && msg.sql.present?
@@ -23,21 +28,26 @@ module Glancer
         prompt = <<~PROMPT
           Current datetime: #{now}
           Active Database Adapter: #{adapter}
+          Database Name: #{db_name}
 
           You are a specialized Ruby on Rails SQL expert.
           Your only task is to generate a valid SQL SELECT statement based on the provided DATABASE CONTEXT.
 
           STRICT GUIDELINES:
-          1. **Language**: You MUST respond in the same language as the "NEW QUESTION". If the question is in Portuguese, respond in Portuguese.
+          1. **Output**: Return ONLY the SQL query. No explanation, no reasoning text, no markdown prose — just the SQL.
           2. **No Translations**: NEVER translate table names or column names. Use names EXACTLY as they appear in the schema.
-          3. **SELECT Only**: Only generate SELECT statements. Destructive operations are strictly forbidden.
+          3. **SELECT Only**: Only generate SELECT or WITH (CTE) statements. Destructive operations are strictly forbidden.
           4. **Joins**: Use the SCHEMA RELATIONSHIPS section below to determine correct JOIN conditions.
-          5. **Reasoning**: Before writing SQL, reason step by step: (1) identify relevant tables, (2) determine required joins using the foreign keys, (3) confirm column names exist in the schema.
+          5. **Formatting**: Format SQL with proper indentation and line breaks:
+             - Each major clause (SELECT, FROM, WHERE, JOIN, GROUP BY, ORDER BY, HAVING, LIMIT) on its own line.
+             - Indent selected columns, JOIN conditions, and WHERE predicates with 2 spaces.
+             - Use a new line for each selected column when there are more than 2 columns.
+
+          Think through the query internally before writing it, but your final response must contain SQL only — no surrounding text.
 
           Rules for generation:
           - Use **column aliases (AS ...)** to improve readability.
           - The SQL must be valid and executable for #{adapter.to_s.upcase}.
-          - Do **not** return explanations or comments.
           - Always qualify column names with the table name (e.g., `orders.created_at`).
 
           SCHEMA RELATIONSHIPS:
@@ -50,6 +60,12 @@ module Glancer
           DATABASE CONTEXT:
           #{format_embeddings_with_stats(schema_context)}
 
+          #{begin
+              custom = Glancer::Setting.get("custom_instructions")
+              custom.present? ? "CUSTOM RULES — MUST BE FOLLOWED STRICTLY:\n#{custom}\n" : ""
+            rescue StandardError
+              ""
+            end}
           NEW QUESTION:
           #{question}
 

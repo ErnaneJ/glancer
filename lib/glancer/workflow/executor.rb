@@ -1,9 +1,9 @@
 module Glancer
   module Workflow
     class Executor
-      def self.execute(sql, original_question: nil, attempt: 1)
-        # Security check: Ensure only SELECT queries are executed
-        unless sql.strip.downcase.start_with?("select")
+      def self.execute(sql, original_question: nil, attempt: 1, message_id: nil)
+        # Security check: Ensure only read queries are executed (SELECT or CTEs starting with WITH)
+        unless sql.strip.match?(/\A\s*(select|with)\b/i)
           Glancer::Utils::Logger.error("Workflow::Executor", "Blocked attempt to run non-SELECT SQL.")
           raise Glancer::Error, "Only SELECT queries are allowed for execution."
         end
@@ -28,7 +28,8 @@ module Glancer
             sql: sql_with_comment,
             adapter: Glancer.configuration.resolved_adapter,
             run_id: run_id,
-            executed_at: Time.current
+            executed_at: Time.current,
+            message_id: message_id
           )
 
           result
@@ -46,7 +47,7 @@ module Glancer
           fixed_sql = Glancer::Workflow::Builder.fix_sql(sql, e.message)
 
           # Retry execution with the corrected SQL
-          execute(fixed_sql, original_question: original_question, attempt: attempt + 1)
+          execute(fixed_sql, original_question: original_question, attempt: attempt + 1, message_id: message_id)
         end
       end
 
