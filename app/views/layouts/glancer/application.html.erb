@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="<%= I18n.locale %>" class="h-full" data-speech-lang="<%= Glancer::Setting.get('speech_language', default: 'auto') %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="turbo-cache-control" content="no-preview">
+  <meta name="description" content="Glancer — natural language database explorer powered by AI">
+  <meta name="theme-color" content="#9333ea">
   <title>Glancer</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%239333ea'/%3E%3Cellipse cx='16' cy='10' rx='8' ry='3' fill='none' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M8 10v5c0 1.657 3.582 3 8 3s8-1.343 8-3v-5' fill='none' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M8 15v5c0 1.657 3.582 3 8 3s8-1.343 8-3v-5' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
 
@@ -79,52 +83,82 @@
            class="fixed inset-y-0 left-0 z-30 flex flex-col w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-xl transform -translate-x-full transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 lg:w-64 lg:shadow-none flex-shrink-0"
            aria-label="Chat navigation">
 
-      <%# Logo %>
-      <div class="flex items-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
-        <div class="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-600">
-          <svg class="w-4 h-4 text-white" aria-hidden="true"><use href="#icon-database"/></svg>
+      <%# Logo + desktop collapse toggle %>
+      <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-600">
+            <svg class="w-4 h-4 text-white" aria-hidden="true"><use href="#icon-database"/></svg>
+          </div>
+          <span class="font-bold text-lg tracking-tight text-gray-900 dark:text-white">Glancer</span>
         </div>
-        <span class="font-bold text-lg tracking-tight text-gray-900 dark:text-white">Glancer</span>
+        <button class="hidden lg:flex p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                data-action="click->chat#toggleDesktopSidebar"
+                aria-label="<%= t('glancer.nav.collapse_sidebar') %>">
+          <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-chevron-left"/></svg>
+        </button>
       </div>
 
       <%# New chat button %>
       <div class="px-3 pt-3 pb-2">
-        <%= link_to glancer.chats_path,
+        <%= link_to glancer.root_path,
             class: "flex items-center gap-2 w-full px-3 py-2 text-sm font-medium rounded-lg bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white transition-colors",
-            data: {
-              turbo_method: :post,
-              action: "click->chat#create"
-            },
-            aria: { label: "Create new chat" } do %>
+            data: { action: "click->chat#create", turbo: "false" },
+            aria: { label: t("glancer.nav.new_chat") } do %>
           <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-plus"/></svg>
-          New chat
+          <%= t("glancer.nav.new_chat") %>
         <% end %>
       </div>
 
       <%# Chat list label %>
       <div class="px-4 pb-1">
-        <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Recent chats</p>
+        <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500"><%= t("glancer.nav.recent_chats") %></p>
       </div>
 
       <%# Scrollable chat list %>
       <%= render "glancer/chats/sidebar_chat_list", chats: @chats, chat: @chat %>
 
-      <%# Sidebar footer: theme toggle %>
-      <div class="px-3 py-3 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+      <%# Sidebar footer: schema + settings + theme toggle %>
+      <div class="px-3 py-3 border-t border-gray-100 dark:border-gray-800 flex-shrink-0 space-y-1">
+        <%= link_to glancer.db_schema_path,
+            class: "flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+            target: "_blank",
+            rel: "noopener",
+            aria: { label: t("glancer.nav.schema") } do %>
+          <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-table"/></svg>
+          <%= t("glancer.nav.schema") %>
+        <% end %>
+        <%= link_to glancer.settings_path,
+            class: "flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
+            data: { turbo: false },
+            aria: { label: t("glancer.nav.settings") } do %>
+          <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-settings"/></svg>
+          <%= t("glancer.nav.settings") %>
+        <% end %>
         <button
           class="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           data-action="click->chat#toggleTheme"
           aria-label="Toggle color theme">
           <svg class="w-4 h-4 dark:hidden" aria-hidden="true"><use href="#icon-moon"/></svg>
           <svg class="w-4 h-4 hidden dark:block" aria-hidden="true"><use href="#icon-sun"/></svg>
-          <span class="dark:hidden">Dark mode</span>
-          <span class="hidden dark:block">Light mode</span>
+          <span class="dark:hidden"><%= t("glancer.nav.dark_mode") %></span>
+          <span class="hidden dark:block"><%= t("glancer.nav.light_mode") %></span>
         </button>
       </div>
     </aside>
 
     <%# Main area %>
     <div class="flex-1 flex flex-col min-w-0 min-h-0">
+
+      <%# Desktop sidebar expand button (visible only when sidebar is collapsed) %>
+      <div id="sidebar-expand-btn"
+           class="hidden fixed top-4 left-4 z-20"
+           aria-hidden="true">
+        <button class="p-1.5 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                data-action="click->chat#toggleDesktopSidebar"
+                aria-label="Expandir menu">
+          <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-chevron-right"/></svg>
+        </button>
+      </div>
 
       <%# Mobile header %>
       <header class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 lg:hidden">
@@ -144,12 +178,16 @@
         </div>
       </header>
 
-      <%# Chat content area (targeted by turbo stream on chat create) %>
+      <%# Chat content area %>
       <div id="main-content" class="flex-1 flex flex-col min-h-0">
-        <%= render "glancer/chats/show",
-            chat: @chat || @chats&.first,
-            chats: @chats,
-            messages: (@chat || @chats&.first)&.messages&.order(:created_at) || [] %>
+        <% if content_for?(:main_content) %>
+          <%= yield :main_content %>
+        <% else %>
+          <%= render "glancer/chats/show",
+              chat: @chat,
+              chats: @chats,
+              messages: @chat ? @chat.messages.order(:created_at) : [] %>
+        <% end %>
       </div>
     </div>
   </div>
@@ -168,5 +206,14 @@
   <%# Prism.js: syntax highlighting for SQL blocks %>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js" defer></script>
+  <%# Re-run Prism after every Turbo navigation %>
+  <script>
+    document.addEventListener("turbo:render", function() {
+      if (window.Prism) setTimeout(function() { Prism.highlightAll(); }, 50);
+    });
+  </script>
+
+  <%# Chart.js for query result visualizations %>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 </body>
 </html>

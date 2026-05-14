@@ -1,10 +1,10 @@
 <div data-controller="message" id="message-info">
-  <% if defined?(message_info) && message_info %>
+  <% if local_assigns[:message_info] %>
     <div class="fixed inset-0 z-50 flex justify-end"
          id="message-info--area"
          role="dialog"
          aria-modal="true"
-         aria-label="Message details">
+         aria-label="Detalhes da mensagem">
       <%# Backdrop %>
       <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"
            data-action="click->message#closeMessageInfo"></div>
@@ -16,10 +16,10 @@
 
         <%# Panel header %>
         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-          <h2 class="text-sm font-semibold text-gray-900 dark:text-white">Message details</h2>
+          <h2 class="text-sm font-semibold text-gray-900 dark:text-white"><%= t("glancer.info_panel.title") %></h2>
           <button class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   data-action="click->message#closeMessageInfo"
-                  aria-label="Close panel">
+                  aria-label="<%= t('glancer.info_panel.close') %>">
             <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-x"/></svg>
           </button>
         </div>
@@ -29,43 +29,129 @@
           <%# User question %>
           <% if message_info.user_message %>
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">User question</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2"><%= t("glancer.info_panel.user_question") %></p>
               <div class="rounded-xl bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-700 dark:text-gray-200">
                 <%= message_info.user_message.content %>
               </div>
             </div>
           <% end %>
 
-          <%# SQL query %>
+          <%# SQL atual %>
           <% if message_info.sql.present? %>
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Generated SQL</p>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= t("glancer.info_panel.current_sql") %></p>
+                <div class="flex items-center gap-2">
+                  <% if message_info.user_edited_sql? %>
+                    <span class="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded-full"><%= t("glancer.info_panel.user_edited") %></span>
+                  <% end %>
+                  <button class="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          data-action="click->message#copySql"
+                          data-sql="<%= j message_info.sql.strip %>"
+                          aria-label="<%= t('glancer.messages.copy_sql') %>">
+                    <svg class="w-3 h-3" aria-hidden="true"><use href="#icon-copy"/></svg>
+                  </button>
+                </div>
+              </div>
               <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <pre class="!m-0 !rounded-none text-xs overflow-x-auto p-4"><code class="language-sql"><%= message_info.sql.strip %></code></pre>
               </div>
             </div>
           <% end %>
 
-          <%# Success status %>
+          <%# SQL version history %>
+          <% versions = message_info.sql_versions.order(created_at: :desc) %>
+          <% if versions.any? %>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                <%= t("glancer.info_panel.sql_versions", count: versions.size) %>
+              </p>
+              <div class="space-y-2">
+                <% versions.each_with_index do |version, idx| %>
+                  <details class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" <%= idx == 0 ? 'open' : '' %>>
+                    <summary class="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors">
+                      <div class="flex items-center gap-2">
+                        <svg class="w-3 h-3 text-gray-400 summary-arrow transition-transform duration-200" aria-hidden="true">
+                          <use href="#icon-chevron-down"/>
+                        </svg>
+                        <span class="text-[11px] text-gray-600 dark:text-gray-300">
+                          <%= version.created_at.strftime("%-d/%m/%Y %H:%M") %>
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <% if version.user_edited? %>
+                          <span class="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded-full">
+                            <%= t("glancer.info_panel.user") %>
+                          </span>
+                        <% else %>
+                          <span class="text-[10px] font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950 px-2 py-0.5 rounded-full">
+                            <%= t("glancer.info_panel.generated") %>
+                          </span>
+                        <% end %>
+                        <button class="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                data-action="click->message#copySql"
+                                data-sql="<%= j version.sql.strip %>"
+                                aria-label="<%= t('glancer.messages.copy_sql') %>">
+                          <svg class="w-3 h-3" aria-hidden="true"><use href="#icon-copy"/></svg>
+                        </button>
+                      </div>
+                    </summary>
+                    <div class="overflow-x-auto">
+                      <pre class="!m-0 !rounded-none text-[11px] p-3"><code class="language-sql"><%= version.sql.strip %></code></pre>
+                    </div>
+                  </details>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Execution history %>
+          <% executions = message_info.audits.order(executed_at: :desc) %>
+          <% if executions.any? %>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                <%= t("glancer.info_panel.execution_history", count: executions.size) %>
+              </p>
+              <div class="space-y-1.5">
+                <% executions.each do |audit| %>
+                  <div class="flex items-start justify-between px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                    <div>
+                      <p class="text-[11px] text-gray-600 dark:text-gray-300">
+                        <%= audit.executed_at.strftime("%-d/%m/%Y às %H:%M:%S") %>
+                      </p>
+                      <p class="text-[10px] text-gray-400 dark:text-gray-500 font-mono mt-0.5">
+                        run_id: <%= audit.run_id %>
+                      </p>
+                    </div>
+                    <span class="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full flex-shrink-0 ml-2">
+                      <%= audit.adapter %>
+                    </span>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+
+          <%# Status %>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Status</p>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2"><%= t("glancer.info_panel.status") %></p>
             <% if message_info.successful? %>
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400">
                 <svg class="w-3 h-3" aria-hidden="true"><use href="#icon-check"/></svg>
-                Query executed successfully
+                <%= t("glancer.info_panel.success") %>
               </span>
             <% else %>
               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-400">
                 <svg class="w-3 h-3" aria-hidden="true"><use href="#icon-x"/></svg>
-                Execution failed
+                <%= t("glancer.info_panel.failed") %>
               </span>
             <% end %>
           </div>
 
-          <%# Timestamp %>
+          <%# Created at %>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Created at</p>
-            <p class="text-sm text-gray-600 dark:text-gray-300"><%= message_info.created_at.strftime("%B %-d, %Y at %H:%M") %></p>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2"><%= t("glancer.info_panel.created_at") %></p>
+            <p class="text-sm text-gray-600 dark:text-gray-300"><%= message_info.created_at.strftime("%-d de %B de %Y às %H:%M:%S") %></p>
           </div>
         </div>
       </div>

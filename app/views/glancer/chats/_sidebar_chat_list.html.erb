@@ -6,7 +6,7 @@
       <div class="group relative flex items-center rounded-lg my-0.5 <%= c == @chat ? 'bg-primary-50 dark:bg-primary-950' : 'hover:bg-gray-100 dark:hover:bg-gray-800' %> transition-colors">
         <%= link_to glancer.chat_path(c),
             class: "flex items-center gap-2.5 flex-1 min-w-0 px-3 py-2.5",
-            data: { action: "click->chat#select", chat_id: c.id },
+            data: { action: "click->chat#select", chat_id: c.id, turbo: "false" },
             aria: { current: (c == @chat ? "page" : nil) } do %>
           <svg class="w-3.5 h-3.5 flex-shrink-0 <%= c == @chat ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400' %>" aria-hidden="true">
             <use href="#icon-chat"/>

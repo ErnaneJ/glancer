@@ -1,0 +1,68 @@
+<%# Compute indexed table names for @ autocomplete %>
+<% glancer_tables = begin
+     Glancer::Embedding.where(source_type: "schema")
+                       .pluck(:source_path)
+                       .filter_map { |p| n = p.split("#").last; n unless n == "foreign_keys" }
+                       .uniq.sort
+   rescue StandardError
+     []
+   end %>
+
+<%# Temp form — submits to /start, creates chat + first message, then redirects via Turbo.visit %>
+<form action="<%= glancer.start_session_path %>"
+      method="post"
+      data-controller="message"
+      data-action="submit->message#submit"
+      data-message-target="form"
+      data-message-start-url-value="<%= glancer.start_session_path %>"
+      data-message-tables-value="<%= glancer_tables.to_json.html_safe %>">
+  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
+  <div class="relative">
+    <%# @ mention autocomplete dropdown %>
+    <div id="mention-dropdown"
+         class="hidden absolute left-0 right-0 bottom-full mb-1 max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 text-sm"
+         role="listbox"
+         aria-label="Table suggestions"></div>
+
+    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent transition-shadow">
+      <textarea name="content"
+                rows="1"
+                maxlength="2000"
+                placeholder="<%= t('glancer.chat.placeholder') %>"
+                class="block w-full px-4 pt-3.5 pb-2 bg-transparent resize-none outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 min-h-[42px] max-h-[200px]"
+                data-message-target="input"
+                data-action="keydown->message#handleKeydown input->message#autoResize input->message#updateCharCount input->message#handleMentionInput keydown->message#handleMentionKeydown"
+                aria-label="<%= t('glancer.chat.placeholder') %>"
+                autocomplete="off"></textarea>
+
+      <%# @ mention chips — shown when @tablename patterns are detected %>
+      <div id="mention-chips"
+           class="hidden px-3 pb-1.5 flex flex-wrap gap-1.5"
+           data-message-target="mentionChips"
+           aria-label="Referenced tables"></div>
+
+      <div class="flex items-center justify-between px-3 pb-2.5">
+        <span class="text-[11px] text-gray-300 dark:text-gray-600 select-none"
+              data-message-target="charCount"
+              aria-live="polite">0 / 2000</span>
+        <div class="flex items-center gap-2">
+          <span class="hidden sm:block text-[11px] text-gray-300 dark:text-gray-600 select-none"><%= t("glancer.chat.hint") %></span>
+          <button type="button"
+                  class="flex items-center justify-center w-8 h-8 rounded-xl text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950 transition-colors"
+                  data-message-target="micBtn"
+                  data-action="click->message#toggleRecording"
+                  aria-label="<%= t('glancer.chat.record') %>">
+            <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-mic"/></svg>
+          </button>
+          <button type="submit"
+                  class="flex items-center justify-center w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+                  data-message-target="submitBtn"
+                  aria-label="<%= t('glancer.chat.send') %>">
+            <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-send"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

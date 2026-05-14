@@ -68,3 +68,64 @@ hr {
 .dark hr {
   border-color: #1f2937;
 }
+
+/* Code blocks inside user message bubbles (white text on purple bg) */
+.user-message-prose code {
+  background: rgba(255, 255, 255, 0.18);
+  color: #f0e8ff;
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+}
+.user-message-prose pre {
+  background: rgba(0, 0, 0, 0.35) !important;
+  border-radius: 6px;
+  margin: 0.5em 0;
+  padding: 0.75em 1em !important;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap !important;
+  word-break: break-all;
+}
+.user-message-prose pre code {
+  background: transparent;
+  padding: 0;
+  color: #e8d5ff;
+  font-size: 0.78rem !important;
+}
+.user-message-prose a {
+  color: #e9d5ff;
+  text-decoration: underline;
+}
+.user-message-prose p { margin: 0.25em 0; }
+
+/* SQL editor textarea — matches Prism code block styling */
+.glancer-sql-editor {
+  background: #1e1e2e !important;
+  color: #cdd6f4 !important;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace !important;
+  font-size: 0.75rem !important;
+  line-height: 1.6 !important;
+  tab-size: 2;
+}
+
+/* @ mention chip in chat form */
+.mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(147, 51, 234, 0.1);
+  color: #7e22ce;
+  border: 1px solid rgba(147, 51, 234, 0.25);
+  border-radius: 9999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: default;
+}
+.dark .mention-chip {
+  background: rgba(192, 132, 252, 0.12);
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.25);
+}

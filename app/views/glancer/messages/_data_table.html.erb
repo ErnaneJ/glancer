@@ -1,5 +1,175 @@
 <% if data.present? && data.any? %>
-  <div class="border-t border-gray-200 dark:border-gray-700">
+  <%# Warning: only when there is no LIMIT and no explicit time filter %>
+  <% sql_text = @message&.sql.to_s.downcase %>
+  <% has_no_limit   = !sql_text.match?(/\blimit\b|\btop\s+\d/) %>
+  <% has_time_filter = sql_text.match?(/interval|date_sub|date_add|date_format|curdate|now\s*\(|getdate|dateadd|datediff|sysdate|between\s+[\w'"]+\s+and\s+[\w'"]+|\d{4}-\d{2}-\d{2}/) %>
+  <% is_large = data.size >= 500 %>
+  <% if (has_no_limit && !has_time_filter) || is_large %>
+    <div class="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950 border-b border-amber-100 dark:border-amber-900 text-xs text-amber-700 dark:text-amber-400">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true"><use href="#icon-warning"/></svg>
+      <% if is_large %>
+        <%= t("glancer.messages.large_warning", count: data.size) %>
+      <% else %>
+        <%= t("glancer.messages.no_limit_warning") %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# Chart carousel — supports multiple charts, single chart, or none %>
+  <% raw_cd = local_assigns[:chart_data]
+     chart_configs = (raw_cd.is_a?(Array) ? raw_cd : raw_cd.is_a?(Hash) ? [raw_cd] : [])
+                     .compact
+                     .select { |c| c.is_a?(Hash) && c.key?(:type) && c.key?(:datasets) } %>
+  <% if chart_configs.any? %>
+    <% msg_id  = @message&.id || SecureRandom.hex(4) %>
+    <% car_id  = "cc-#{msg_id}" %>
+    <div id="<%= car_id %>" class="border-b border-gray-100 dark:border-gray-800" data-carousel>
+
+      <%# Slides — one per chart config %>
+      <% chart_configs.each_with_index do |cfg, idx| %>
+        <div data-slide="<%= idx %>" class="<%= idx.zero? ? '' : 'hidden' %>">
+          <div class="px-4 pt-4 pb-3">
+            <canvas id="chart-<%= msg_id %>-<%= idx %>" style="max-height:260px;"></canvas>
+          </div>
+        </div>
+      <% end %>
+
+      <%# Carousel controls — only rendered when >1 chart %>
+      <% if chart_configs.size > 1 %>
+        <div class="flex items-center justify-center gap-3 pb-3">
+          <button onclick="glancerCarousel('<%= car_id %>',-1)"
+                  class="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label="Previous chart">
+            <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-chevron-left"/></svg>
+          </button>
+          <div class="flex gap-1.5 items-center">
+            <% chart_configs.each_with_index do |_, idx| %>
+              <button onclick="glancerCarouselGoto('<%= car_id %>',<%= idx %>)"
+                      data-dot="<%= idx %>"
+                      class="w-2 h-2 rounded-full transition-colors focus:outline-none <%= idx.zero? ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-600' %>"
+                      aria-label="Chart <%= idx + 1 %>"></button>
+            <% end %>
+          </div>
+          <button onclick="glancerCarousel('<%= car_id %>',1)"
+                  class="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label="Next chart">
+            <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-chevron-right"/></svg>
+          </button>
+        </div>
+      <% end %>
+    </div>
+
+    <script>
+      /* Carousel helpers — defined first so they survive any chart init errors */
+      window.glancerCarouselGoto = function(id, target) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var slides = el.querySelectorAll('[data-slide]');
+        var dots   = el.querySelectorAll('[data-dot]');
+        var total  = slides.length;
+        target = ((target % total) + total) % total;
+        slides.forEach(function(s, i) { s.classList.toggle('hidden', i !== target); });
+        dots.forEach(function(d, i) {
+          d.classList.toggle('bg-primary-500',    i === target);
+          d.classList.toggle('bg-gray-300',       i !== target);
+          d.classList.toggle('dark:bg-gray-600',  i !== target);
+        });
+        el._slide = target;
+      };
+      window.glancerCarousel = function(id, dir) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        window.glancerCarouselGoto(id, (el._slide || 0) + dir);
+      };
+
+      /* Chart initialisation */
+      (function() {
+        if (typeof Chart === 'undefined') return;
+
+        var PALETTE = [
+          'rgba(147,51,234,0.8)','rgba(59,130,246,0.8)','rgba(16,185,129,0.8)',
+          'rgba(245,158,11,0.8)','rgba(239,68,68,0.8)','rgba(236,72,153,0.8)',
+          'rgba(20,184,166,0.8)','rgba(249,115,22,0.8)','rgba(132,204,22,0.8)',
+          'rgba(251,146,60,0.8)'
+        ];
+
+        function styleDatasets(chartCfg) {
+          if (!chartCfg || !Array.isArray(chartCfg.datasets)) return;
+          chartCfg.datasets.forEach(function(ds, i) {
+            var color = PALETTE[i % PALETTE.length];
+            if (chartCfg.type === 'line') {
+              ds.borderColor      = color;
+              ds.backgroundColor  = color.replace('0.8', '0.12');
+              ds.tension          = 0.35;
+              ds.fill             = chartCfg.datasets.length === 1;
+              ds.pointRadius      = Math.max(2, Math.min(5, Math.floor(200 / Math.max((chartCfg.labels || []).length, 1))));
+              ds.pointHoverRadius = ds.pointRadius + 2;
+            } else if (chartCfg.type === 'doughnut') {
+              ds.backgroundColor = PALETTE;
+              ds.borderWidth     = 2;
+            } else if (chartCfg.type === 'scatter') {
+              ds.backgroundColor  = color;
+              ds.borderColor      = color.replace('0.8', '1');
+              ds.pointRadius      = 5;
+              ds.pointHoverRadius = 7;
+            } else {
+              ds.backgroundColor = color;
+              ds.borderColor     = color.replace('0.8', '1');
+              ds.borderWidth     = 1;
+              ds.borderRadius    = 3;
+            }
+          });
+        }
+
+        function buildScales(chartCfg) {
+          if (chartCfg.type === 'doughnut') return {};
+          if (chartCfg.type === 'scatter') {
+            return {
+              x: { type: 'linear', title: { display: !!chartCfg.xLabel, text: chartCfg.xLabel || '', font: { size: 10 } }, ticks: { font: { size: 10 } } },
+              y: { title: { display: !!chartCfg.yLabel, text: chartCfg.yLabel || '', font: { size: 10 } }, ticks: { font: { size: 10 } }, beginAtZero: false }
+            };
+          }
+          return {
+            x: { ticks: { font: { size: 10 }, maxRotation: 45, maxTicksLimit: 14 } },
+            y: { ticks: { font: { size: 10 } }, beginAtZero: false }
+          };
+        }
+
+        <% chart_configs.each_with_index do |chart_rb, idx| %>
+          (function() {
+            var ctx = document.getElementById('chart-<%= msg_id %>-<%= idx %>');
+            if (!ctx) return;
+            var chartCfg = <%= chart_rb.to_json.gsub('</', '<\/').html_safe %>;
+            if (!chartCfg || !Array.isArray(chartCfg.datasets)) return;
+            styleDatasets(chartCfg);
+            new Chart(ctx, {
+              type: chartCfg.type,
+              data: {
+                labels:   chartCfg.type === 'scatter' ? undefined : chartCfg.labels,
+                datasets: chartCfg.datasets
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: { duration: 400 },
+                plugins: {
+                  legend: {
+                    display: chartCfg.datasets.length > 1 || chartCfg.type === 'doughnut',
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                  }
+                },
+                scales: buildScales(chartCfg)
+              }
+            });
+          })();
+        <% end %>
+      })();
+    </script>
+  <% end %>
+
+  <%# Data table %>
+  <div>
     <div class="overflow-x-auto">
       <table class="min-w-full text-xs">
         <thead>
@@ -24,21 +194,62 @@
         </tbody>
       </table>
     </div>
-    <div class="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-      <span class="text-[11px] text-gray-400 dark:text-gray-500"><%= data.size %> <%= data.size == 1 ? 'row' : 'rows' %></span>
-      <script>
-        <%# Reveal the CSV download button that lives in the same controller scope %>
-        (function() {
-          var container = document.getElementById('results-<%= @message&.id %>');
-          var scope = container?.closest('[data-controller="message"]');
-          var btn = scope?.querySelector('[data-message-target="downloadBtn"]');
-          if (btn) btn.classList.remove('hidden');
-        })();
-      </script>
-    </div>
   </div>
+
+  <script>
+    (function() {
+      var msgId    = '<%= @message&.id %>';
+      var section  = document.getElementById('results-section-' + msgId);
+      var header   = document.getElementById('results-header-' + msgId);
+      var meta     = document.getElementById('results-meta-' + msgId);
+      var container = document.getElementById('results-' + msgId);
+      var arrow    = document.getElementById('results-arrow-' + msgId);
+      var scope    = container?.closest('[data-controller="message"]');
+      var dlBtn    = scope?.querySelector('[data-message-target="downloadBtn"]');
+
+      if (dlBtn) dlBtn.classList.remove('hidden');
+
+      if (section && header && container) {
+        section.dataset.resultsOpen = 'true';
+        header.classList.remove('hidden');
+        header.classList.add('flex');
+        container.style.maxHeight = 'none';
+        container.style.overflow  = '';
+
+        if (typeof Chart !== 'undefined') {
+          requestAnimationFrame(function() {
+            container.querySelectorAll('canvas').forEach(function(canvas) {
+              var chart = Chart.getChart(canvas);
+              if (chart) chart.resize();
+            });
+          });
+        }
+
+        var rowCount  = <%= data.size %>;
+        var rowLabel  = rowCount === 1 ? '<%= j t("glancer.messages.row") %>' : '<%= j t("glancer.messages.rows") %>';
+        var timeStr   = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        var ranPrefix = '<%= j t("glancer.messages.ran_at", time: "").strip.chomp(":").strip %>';
+        if (meta) meta.textContent = rowCount + ' ' + rowLabel + ' · ' + ranPrefix + ' ' + timeStr;
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      }
+    })();
+  </script>
 <% else %>
-  <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-xs text-center text-gray-400 dark:text-gray-500">
-    No results returned.
+  <div class="px-4 py-3 text-xs text-center text-gray-400 dark:text-gray-500">
+    <%= t("glancer.messages.no_results") %>
   </div>
+  <script>
+    (function() {
+      var msgId   = '<%= @message&.id %>';
+      var section = document.getElementById('results-section-' + msgId);
+      var header  = document.getElementById('results-header-' + msgId);
+      if (section && header) {
+        section.dataset.resultsOpen = 'true';
+        header.classList.remove('hidden');
+        header.classList.add('flex');
+        var container = document.getElementById('results-' + msgId);
+        if (container) { container.style.maxHeight = 'none'; container.style.overflow = ''; }
+      }
+    })();
+  </script>
 <% end %>

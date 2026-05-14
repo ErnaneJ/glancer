@@ -1,0 +1,26 @@
+<div class="px-4 py-3 border-t border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
+  <div class="flex items-start gap-2">
+    <svg class="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true"><use href="#icon-x"/></svg>
+    <div>
+      <p class="text-xs font-medium text-red-700 dark:text-red-400"><%= t("glancer.messages.execution_failed") %></p>
+      <p class="text-[11px] text-red-600 dark:text-red-500 mt-0.5 font-mono"><%= error_message %></p>
+    </div>
+  </div>
+  <script>
+    (function() {
+      var msgId    = '<%= @message&.id %>';
+      var section  = document.getElementById('results-section-' + msgId);
+      var header   = document.getElementById('results-header-' + msgId);
+      var container = document.getElementById('results-' + msgId);
+      if (section && header && container) {
+        section.dataset.resultsOpen = 'true';
+        header.classList.remove('hidden');
+        header.classList.add('flex');
+        container.style.maxHeight = 'none';
+        container.style.overflow = '';
+        var meta = document.getElementById('results-meta-' + msgId);
+        if (meta) meta.textContent = '<%= j t("glancer.messages.execution_failed") %>';
+      }
+    })();
+  </script>
+</div>

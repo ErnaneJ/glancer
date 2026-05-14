@@ -1,10 +1,12 @@
-<%# Remove the thinking indicator added by JavaScript %>
+<%# Remove thinking indicator %>
 <%= turbo_stream.remove "thinking-indicator" %>
 
-<%= turbo_stream.append "chat-messages" do %>
+<%# Replace temp user message with the real server-rendered one (preserves data-* attrs) %>
+<%= turbo_stream.replace "temp-user-message" do %>
   <%= render "glancer/messages/message", message: @message %>
 <% end %>
 
+<%# Append the assistant response %>
 <%= turbo_stream.append "chat-messages" do %>
   <%= render "glancer/messages/message", message: @response_message %>
 <% end %>
@@ -15,4 +17,9 @@
 
 <%= turbo_stream.replace "message-info" do %>
   <%= render "glancer/messages/message_info", message_info: nil %>
+<% end %>
+
+<%# Refresh sidebar so title updates after first message %>
+<%= turbo_stream.replace "sidebar-chat-list" do %>
+  <%= render "glancer/chats/sidebar_chat_list", chats: @chats, chat: @chat %>
 <% end %>
