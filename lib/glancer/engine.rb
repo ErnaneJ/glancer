@@ -2,6 +2,8 @@ module Glancer
   class Engine < ::Rails::Engine
     isolate_namespace Glancer
 
+    config.i18n.load_path += Dir[root.join("config/locales/*.yml").to_s]
+
     initializer "glancer.append_migrations" do |app|
       unless app.root.to_s.match?(root.to_s)
         config.paths["db/migrate"].expanded.each do |expanded_path|
@@ -51,8 +53,7 @@ module Glancer
         Glancer::Engine.configure_provider_key(config, glancer_cfg, provider)
         Glancer::Engine.configure_provider_key(config, glancer_cfg, embed_provider) if embed_provider != provider
 
-        default_embed_model = Glancer::Engine.default_embedding_model_for(embed_provider)
-        config.default_embedding_model = glancer_cfg.embedding_model || default_embed_model
+        config.default_embedding_model = glancer_cfg.resolved_embedding_model
 
         Glancer::Utils::Logger.info("Engine",
                                     "RubyLLM configured — chat: #{provider}/#{glancer_cfg.llm_model}, " \
@@ -87,13 +88,5 @@ module Glancer
       end
     end
 
-    def self.default_embedding_model_for(provider)
-      case provider.to_sym
-      when :gemini     then "text-embedding-004"
-      when :openai     then "text-embedding-3-large"
-      when :openrouter then "text-embedding-3-small" # set embedding_provider: :openai for better support
-      else "text-embedding-004"
-      end
-    end
   end
 end

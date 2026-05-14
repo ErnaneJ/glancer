@@ -3,8 +3,9 @@ module Glancer
     class LLM
       def self.humanized_response(question, data, sql)
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.llm_provider,
-          model: Glancer.configuration.llm_model
+          provider: Glancer.configuration.resolved_chat_provider,
+          model: Glancer.configuration.resolved_chat_model,
+          assume_model_exists: true
         )
 
         # Privacy layer: provide only a summary and a small sample to the LLM
@@ -16,16 +17,18 @@ module Glancer
         # }
 
         context = <<~PROMPT
-          You are **Glancer**, a professional SQL assistant.
+          You are **Glancer**, a concise SQL assistant.
 
           CRITICAL RULES:
-          - **Language Match**: You MUST detect the language of the user's question and respond ONLY in that language. If asked in Portuguese, respond in Portuguese.
-          - **Metadata Focus**: Explain the query
-          - **No Hallucinations**: You have no knowledge of the actual data rows. Do not assume values that are not in the provided metadata.
-          - **Formatting**: Use Markdown, bold text for metrics, and lists for clarity.
-          - Never show the SQL query because it is already provided below.
+          - **Language Match**: Respond ONLY in the same language as the user's question.
+          - **Never say the query "ran", "executed", or "returned"** — the query was GENERATED to answer the user's question. The actual results are displayed separately in the UI.
+          - **What to explain**: Describe WHAT the query does logically (e.g., "it joins orders with customers to count purchases per month") and WHY it answers the question.
+          - **Brevity**: 2–4 sentences maximum. No bullet points unless truly necessary.
+          - **No SQL repeat**: The SQL is already shown; do not include it in your response.
+          - **No hallucinations**: You have no knowledge of the actual result values. Do not describe or infer data values.
+          - **Formatting**: Use Markdown and bold for key terms.
 
-          SQL EXECUTED:
+          SQL GENERATED to answer the user's question:
           ```sql
           #{sql}
           ```
@@ -33,6 +36,9 @@ module Glancer
           USER QUESTION:
           #{question}
         PROMPT
+
+        custom = Glancer::Setting.get("custom_instructions")
+        context += "\n\nADDITIONAL INSTRUCTIONS:\n#{custom}" if custom.present?
 
         chat.with_instructions(context)
         response = chat.ask(question)
@@ -43,8 +49,58 @@ module Glancer
         "I processed the query but failed to generate a humanized explanation. You can still see the raw data below."
       end
 
+      def self.explain_missing_tables(question, error_message)
+        missing = error_message.scan(/Missing table\(s\) in indexed schema: (.+)/).flatten.first ||
+                  error_message.scan(/Table validation failed: Missing table\(s\) in indexed schema: (.+)/).flatten.first ||
+                  "desconhecidas"
+
+        prompt = <<~PROMPT
+          You are **Glancer**, a helpful SQL assistant.
+
+          The user asked: "#{question}"
+
+          When I tried to generate the SQL query, I referenced table(s) that don't exist in the indexed schema: **#{missing}**.
+          This is likely a naming mismatch (e.g., the user said "afiliados" but the actual table is "filiais").
+
+          Please:
+          1. Tell the user in a friendly way that the table(s) **#{missing}** could not be found in the database schema.
+          2. Suggest they check the schema viewer at `/glancer/db-schema` to see all available tables.
+          3. Ask them to rephrase the question using the correct table name.
+          4. Keep it to 2-3 sentences. Respond in the exact same language as the user's question.
+        PROMPT
+
+        chat = RubyLLM.chat(
+          provider: Glancer.configuration.resolved_chat_provider,
+          model: Glancer.configuration.resolved_chat_model,
+          assume_model_exists: true
+        )
+        chat.ask(prompt).content
+      rescue StandardError => e
+        Glancer::Utils::Logger.error("Workflow::LLM", "explain_missing_tables failed: #{e.message}")
+        "Não consegui encontrar a(s) tabela(s) **#{missing}** no schema indexado. " \
+          "Acesse `/glancer/db-schema` para ver todas as tabelas disponíveis e reformule sua pergunta com o nome correto."
+      end
+
+      def self.generate_title(question)
+        chat = RubyLLM.chat(
+          provider: Glancer.configuration.resolved_chat_provider,
+          model: Glancer.configuration.resolved_chat_model,
+          assume_model_exists: true
+        )
+        prompt = "Generate a concise, descriptive title (max 45 characters, no quotes, no punctuation at end) " \
+                 "for a database query session starting with this question: #{question}"
+        chat.ask(prompt).content.strip.truncate(50)
+      rescue StandardError => e
+        Glancer::Utils::Logger.error("Workflow::LLM", "generate_title failed: #{e.message}")
+        question.truncate(45)
+      end
+
       def self.explain_error(question, error_message, sql)
-        chat = RubyLLM.chat(provider: Glancer.configuration.llm_provider, model: Glancer.configuration.llm_model)
+        chat = RubyLLM.chat(
+          provider: Glancer.configuration.resolved_chat_provider,
+          model: Glancer.configuration.resolved_chat_model,
+          assume_model_exists: true
+        )
 
         prompt = <<~PROMPT
           You are **Glancer**. The user asked: "#{question}".

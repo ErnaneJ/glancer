@@ -10,8 +10,9 @@ module Glancer
         Glancer::Utils::Logger.debug("Workflow::Builder", "Generated prompt for SQL generation:\n#{prompt}")
 
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.llm_provider,
-          model: Glancer.configuration.llm_model
+          provider: Glancer.configuration.resolved_sql_provider,
+          model: Glancer.configuration.resolved_sql_model,
+          assume_model_exists: true
         )
 
         response = chat.ask(prompt)
@@ -56,8 +57,9 @@ module Glancer
         PROMPT
 
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.llm_provider,
-          model: Glancer.configuration.llm_model
+          provider: Glancer.configuration.resolved_sql_provider,
+          model: Glancer.configuration.resolved_sql_model,
+          assume_model_exists: true
         )
 
         response = chat.ask(prompt)

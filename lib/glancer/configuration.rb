@@ -4,6 +4,16 @@ module Glancer
     LLM_PROVIDERS = %i[gemini openai openrouter].freeze
     LOG_VERBOSITY_LEVELS = %i[none info debug].freeze
 
+    # Default embedding models per provider.
+    # OpenRouter does not expose a native embedding API; the recommended approach
+    # is to set embedding_provider to :gemini or :openai and only use openrouter
+    # for chat/sql roles.
+    EMBEDDING_DEFAULTS = {
+      gemini:     "text-embedding-004",
+      openai:     "text-embedding-3-large",
+      openrouter: "openai/text-embedding-3-small"
+    }.freeze
+
     def initialize
       self.adapter = Glancer::Configuration.infer_adapter || :mysql2
       self.read_only_db = nil
@@ -30,6 +40,11 @@ module Glancer
       self.statement_timeout = 30.seconds
       self.embedding_provider = nil  # nil → uses llm_provider
       self.embedding_model = nil     # nil → uses provider default
+      self.sql_provider = nil        # nil → uses llm_provider (for SQL generation)
+      self.sql_model = nil           # nil → uses llm_model (for SQL generation)
+      self.chat_provider = nil       # nil → uses llm_provider (for humanized responses)
+      self.chat_model = nil          # nil → uses llm_model (for humanized responses)
+      self.blazer_path = nil         # nil → auto-detected if Blazer::Engine is mounted
     end
 
     # === READERS ===
@@ -40,7 +55,10 @@ module Glancer
                 :k, :min_score,
                 :schema_documents_weight, :context_documents_weight, :models_documents_weight,
                 :chunk_size, :chunk_overlap, :history_limit, :statement_timeout,
-                :embedding_provider, :embedding_model
+                :embedding_provider, :embedding_model,
+                :sql_provider, :sql_model,
+                :chat_provider, :chat_model,
+                :blazer_path
 
     # === WRITERS ===
     def adapter=(value)
@@ -222,6 +240,69 @@ module Glancer
     # Returns the provider to use for embedding calls (falls back to llm_provider).
     def resolved_embedding_provider
       embedding_provider || llm_provider
+    end
+
+    # Returns the model to use for embedding calls.
+    # Falls back to EMBEDDING_DEFAULTS for the resolved provider.
+    def resolved_embedding_model
+      embedding_model || EMBEDDING_DEFAULTS[resolved_embedding_provider] || "text-embedding-004"
+    end
+
+    def sql_provider=(value)
+      unless value.nil? || LLM_PROVIDERS.include?(value)
+        raise ArgumentError, "sql_provider must be nil or one of: #{LLM_PROVIDERS.join(', ')}"
+      end
+
+      @sql_provider = value
+    end
+
+    def sql_model=(value)
+      raise ArgumentError, "sql_model must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @sql_model = value
+    end
+
+    def chat_provider=(value)
+      unless value.nil? || LLM_PROVIDERS.include?(value)
+        raise ArgumentError, "chat_provider must be nil or one of: #{LLM_PROVIDERS.join(', ')}"
+      end
+
+      @chat_provider = value
+    end
+
+    def chat_model=(value)
+      raise ArgumentError, "chat_model must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @chat_model = value
+    end
+
+    def resolved_sql_provider
+      sql_provider || llm_provider
+    end
+
+    def resolved_sql_model
+      sql_model || llm_model
+    end
+
+    def resolved_chat_provider
+      chat_provider || llm_provider
+    end
+
+    def resolved_chat_model
+      chat_model || llm_model
+    end
+
+    def blazer_path=(value)
+      raise ArgumentError, "blazer_path must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @blazer_path = value
+    end
+
+    # Returns the Blazer base path if Blazer is available, nil otherwise.
+    def resolved_blazer_path
+      return @blazer_path unless @blazer_path.nil?
+
+      defined?(Blazer::Engine) ? "/blazer" : nil
     end
 
     # Returns the adapter in use, auto-detecting from ActiveRecord when nil.
