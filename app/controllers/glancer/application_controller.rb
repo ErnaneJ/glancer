@@ -1,4 +1,7 @@
+# frozen_string_literal: true
+
 module Glancer
+  # :nodoc:
   class ApplicationController < ::ApplicationController
     before_action :set_glancer_locale
 
