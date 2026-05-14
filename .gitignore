@@ -1,5 +1,5 @@
 /.bundle/
-/.yardoc
+/.yardoc/
 /_yardoc/
 /coverage/
 /doc/
@@ -7,5 +7,24 @@
 /spec/reports/
 /tmp/
 
-# rspec failure tracking
+# RSpec failure tracking
 .rspec_status
+
+# Bundler
+Gemfile.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editors
+.vscode/settings.json
+.vscode/*.log
+.cursor/
+*.swp
+*.swo
+*~
+
+# Claude Code — keep CLAUDE.md and plan/memory markdown, ignore session data
+.claude/**/*.json
+.claude/**/*.jsonl
