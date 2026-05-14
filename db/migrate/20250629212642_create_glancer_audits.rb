@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 class CreateGlancerAudits < ActiveRecord::Migration[6.1]
   def change
     create_table :glancer_audits do |t|

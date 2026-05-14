@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 namespace :glancer do
   desc "Show current Glancer and RubyLLM versions"
   task :version do
@@ -9,7 +10,7 @@ namespace :glancer do
     desc "Rebuild all Glancer indexes"
     task all: :environment do
       existing = Glancer::Embedding.count
-      if existing > 0
+      if existing.positive?
         puts "\n\e[33m✱ There are currently #{existing} embeddings stored.\e[0m"
         puts "\e[31m└→ This operation will delete all existing embeddings and reindex everything.\e[0m"
       end
@@ -80,7 +81,7 @@ namespace :glancer do
       last = existing.order(created_at: :desc).first.created_at
       puts "\n\e[33m✱ Existing #{existing.count} '#{type}' embeddings found. Last updated: #{last.strftime("%Y-%m-%d %H:%M:%S")}.\e[0m"
       print "\e[31m└→ Do you want to delete and reindex? [y/N]: \e[0m"
-      input = STDIN.gets.strip.upcase
+      input = $stdin.gets.strip.upcase
 
       puts "\n\e[31m✖ Operation cancelled.\e[0m\n" unless input == "Y"
 

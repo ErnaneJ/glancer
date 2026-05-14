@@ -1,7 +1,8 @@
+# frozen_string_literal: true
 module Glancer
   module Workflow
     class LLM
-      def self.humanized_response(question, data, sql)
+      def self.humanized_response(question, _data, sql)
         chat = RubyLLM.chat(
           provider: Glancer.configuration.resolved_chat_provider,
           model: Glancer.configuration.resolved_chat_model,

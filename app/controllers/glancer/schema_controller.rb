@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   class SchemaController < Glancer::ApplicationController
     layout "glancer/application"
@@ -22,7 +23,6 @@ module Glancer
 
         { name: table_name, columns: columns, foreign_keys: fks }
       end
-
     end
   end
 end

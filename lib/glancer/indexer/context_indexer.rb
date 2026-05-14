@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Indexer
     module ContextIndexer
@@ -37,7 +38,7 @@ module Glancer
         Glancer::Utils::Logger.error("Indexer::ContextIndexer",
                                      "Failed to index context: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Indexer::ContextIndexer", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("Context indexing failed: #{e.message}"), cause: e
+        raise Glancer::Error, "Context indexing failed: #{e.message}"
       end
 
       def split_into_chunks(text)

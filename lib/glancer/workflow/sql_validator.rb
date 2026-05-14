@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Workflow
     class SQLValidator
@@ -24,7 +25,7 @@ module Glancer
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::SQLValidator", "Table validation failed: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Workflow::SQLValidator", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("Table validation failed: #{e.message}"), cause: e
+        raise Glancer::Error, "Table validation failed: #{e.message}"
       end
 
       def self.extract_table_names(sql)

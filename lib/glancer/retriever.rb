@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "ruby_llm"
 
 module Glancer
@@ -39,7 +40,7 @@ module Glancer
     rescue StandardError => e
       Glancer::Utils::Logger.error("Retriever", "Failed to store document chunks: #{e.class} - #{e.message}")
       Glancer::Utils::Logger.debug("Retriever", "Backtrace:\n#{e.backtrace.join("\n")}")
-      raise Glancer::Error.new("Document storage failed: #{e.message}"), cause: e
+      raise Glancer::Error, "Document storage failed: #{e.message}"
     end
 
     def search(query)

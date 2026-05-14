@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   class Engine < ::Rails::Engine
     isolate_namespace Glancer
@@ -64,8 +65,9 @@ module Glancer
     rescue StandardError => e
       Glancer::Utils::Logger.error("Engine", "Failed to configure RubyLLM: #{e.class} - #{e.message}")
       Glancer::Utils::Logger.debug("Engine", "Backtrace:\n#{e.backtrace.join("\n")}")
-      raise Glancer::Error.new("RubyLLM configuration failed: #{e.message}"), cause: e
+      raise Glancer::Error, "RubyLLM configuration failed: #{e.message}"
     end
+
     def self.configure_provider_key(config, glancer_cfg, provider)
       case provider
       when :gemini
@@ -87,6 +89,5 @@ module Glancer
         raise Glancer::Error, "Unsupported LLM provider: #{provider.inspect}"
       end
     end
-
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Indexer
     module SchemaIndexer
@@ -46,7 +47,7 @@ module Glancer
       rescue StandardError => e
         Glancer::Utils::Logger.error("Indexer::SchemaIndexer", "Schema indexing failed: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("Schema indexing failed: #{e.message}"), cause: e
+        raise Glancer::Error, "Schema indexing failed: #{e.message}"
       end
 
       def split_into_chunks(schema_text)

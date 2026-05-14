@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Glancer configuration
 # Full reference: https://github.com/ernanej/glancer
 
@@ -87,7 +88,7 @@ Glancer.configure do |config|
   # ─────────────────────────────────────────────────────────────────────────────
 
   # Use provider-specific keys (preferred) or api_key as a generic fallback.
-  config.gemini_api_key     = ENV["GEMINI_API_KEY"]
+  config.gemini_api_key = ENV["GEMINI_API_KEY"]
   # config.openai_api_key    = ENV["OPENAI_API_KEY"]
   # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
   # config.api_key           = ENV["LLM_API_KEY"]  # generic fallback for any provider
@@ -154,9 +155,9 @@ Glancer.configure do |config|
 
   # Relevance multipliers per document type (must be ≥ 1.0).
   # Higher weight = ranked higher in retrieved context.
-  config.schema_documents_weight  = 1.3  # db/schema.rb table definitions
+  config.schema_documents_weight = 1.3  # db/schema.rb table definitions
   config.context_documents_weight = 1.2  # custom context Markdown file
-  config.models_documents_weight  = 1.1  # ActiveRecord model files
+  config.models_documents_weight = 1.1  # ActiveRecord model files
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Conversation

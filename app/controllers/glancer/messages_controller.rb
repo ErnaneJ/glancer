@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   class MessagesController < Glancer::ApplicationController
     def create

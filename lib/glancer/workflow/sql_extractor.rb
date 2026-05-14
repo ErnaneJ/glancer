@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Workflow
     class SQLExtractor
@@ -32,7 +33,7 @@ module Glancer
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::SQLExtractor", "SQL extraction failed: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Workflow::SQLExtractor", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("SQL extraction failed: #{e.message}"), cause: e
+        raise Glancer::Error, "SQL extraction failed: #{e.message}"
       end
     end
   end

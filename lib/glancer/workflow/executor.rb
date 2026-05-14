@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Workflow
     class Executor

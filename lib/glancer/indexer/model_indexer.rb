@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Indexer
     module ModelIndexer
@@ -43,7 +44,7 @@ module Glancer
       rescue StandardError => e
         Glancer::Utils::Logger.error("Indexer::ModelIndexer", "Model indexing failed: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Indexer::ModelIndexer", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("Model indexing failed: #{e.message}"), cause: e
+        raise Glancer::Error, "Model indexing failed: #{e.message}"
       end
 
       def split_into_chunks(text)

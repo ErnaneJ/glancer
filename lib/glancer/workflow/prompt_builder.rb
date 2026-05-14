@@ -1,6 +1,14 @@
+# frozen_string_literal: true
 module Glancer
   module Workflow
     class PromptBuilder
+      def self.custom_instructions_block
+        custom = Glancer::Setting.get("custom_instructions")
+        custom.present? ? "CUSTOM RULES — MUST BE FOLLOWED STRICTLY:\n#{custom}\n" : ""
+      rescue StandardError
+        ""
+      end
+
       def self.call(question, embeddings, history: [], few_shot_examples: [])
         Glancer::Utils::Logger.info("Workflow::PromptBuilder", "Building prompt for question: #{question.inspect}")
 
@@ -60,12 +68,7 @@ module Glancer
           DATABASE CONTEXT:
           #{format_embeddings_with_stats(schema_context)}
 
-          #{begin
-              custom = Glancer::Setting.get("custom_instructions")
-              custom.present? ? "CUSTOM RULES — MUST BE FOLLOWED STRICTLY:\n#{custom}\n" : ""
-            rescue StandardError
-              ""
-            end}
+          #{custom_instructions_block}
           NEW QUESTION:
           #{question}
 
@@ -78,7 +81,7 @@ module Glancer
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::PromptBuilder", "Failed to build prompt: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("Prompt construction failed: #{e.message}"), cause: e
+        raise Glancer::Error, "Prompt construction failed: #{e.message}"
       end
 
       def self.example_sql(adapter)

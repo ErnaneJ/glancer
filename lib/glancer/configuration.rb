@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   class Configuration
     ADAPTERS_SUPPORTED = %i[postgres mysql mysql2 sqlite].freeze
@@ -9,8 +10,8 @@ module Glancer
     # is to set embedding_provider to :gemini or :openai and only use openrouter
     # for chat/sql roles.
     EMBEDDING_DEFAULTS = {
-      gemini:     "text-embedding-004",
-      openai:     "text-embedding-3-large",
+      gemini: "text-embedding-004",
+      openai: "text-embedding-3-large",
       openrouter: "openai/text-embedding-3-small"
     }.freeze
 

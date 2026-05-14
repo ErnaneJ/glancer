@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Glancer
   module Utils
     class Transaction
@@ -38,7 +39,7 @@ module Glancer
         Glancer::Utils::Logger.error("Utils::Transaction",
                                      "Failed to connect to read-only database: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Utils::Transaction", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error.new("Read-only DB connection failed: #{e.message}"), cause: e
+        raise Glancer::Error, "Read-only DB connection failed: #{e.message}"
       end
 
       def self.read_only_connection_used?

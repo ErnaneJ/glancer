@@ -1,8 +1,43 @@
 AllCops:
   TargetRubyVersion: 3.1
+  NewCops: disable
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+
+# Internal Rails engine — no public API to document
+Style/Documentation:
+  Enabled: false
+
+# @@store in Workflow::Cache is intentional
+Style/ClassVars:
+  Enabled: false
+
+# Complex pipeline and configuration methods legitimately exceed 10 lines
+Metrics/MethodLength:
+  Max: 35
+
+Metrics/AbcSize:
+  Max: 55
+
+Metrics/ClassLength:
+  Max: 250
+
+Metrics/CyclomaticComplexity:
+  Max: 15
+
+Metrics/PerceivedComplexity:
+  Max: 15
+
+# Rake tasks and generator templates are necessarily long blocks
+Metrics/BlockLength:
+  Max: 80
+  Exclude:
+    - "lib/tasks/**/*.rake"
+    - "lib/generators/**/*.rb"
+
+Layout/LineLength:
+  Max: 140

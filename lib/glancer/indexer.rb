@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require_relative "indexer/schema_indexer"
 require_relative "indexer/model_indexer"
 require_relative "indexer/context_indexer"
@@ -42,7 +43,7 @@ module Glancer
     rescue StandardError => e
       Glancer::Utils::Logger.error("Indexer", "Index rebuilding failed: #{e.class} - #{e.message}")
       Glancer::Utils::Logger.debug("Indexer", "Backtrace:\n#{e.backtrace.join("\n")}")
-      raise Glancer::Error.new("Index rebuilding failed: #{e.message}"), cause: e
+      raise Glancer::Error, "Index rebuilding failed: #{e.message}"
     end
   end
 end
