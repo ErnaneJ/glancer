@@ -11,8 +11,6 @@ A Ruby on Rails engine that adds a **natural language database query interface**
 
 Glancer implements a RAG (Retrieval-Augmented Generation) pipeline:
 
-![](./.github/assets/glancer-flow-bg.svg)
-
 1. **Index** — your schema, models, and custom context are chunked and embedded into a local vector store.
 2. **Retrieve** — when a question is asked, the most relevant chunks are retrieved via cosine similarity.
 3. **Generate** — a prompt containing the schema context and conversation history is sent to your LLM, which returns a `SELECT` statement.
