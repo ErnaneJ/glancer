@@ -1,69 +1,68 @@
 module Glancer
-  class ChatsController < ApplicationController
+  class ChatsController < Glancer::ApplicationController
     layout "glancer/application"
 
+    # GET / — temp chat view (no DB record created yet)
     def index
       @chats = Glancer::Chat.order(created_at: :desc)
-      redirect_to glancer.chat_path(
-        @chats.first ||
-        Glancer::Chat.create!(title: "Chat #{Time.current.strftime("%H:%M")}")
-      )
+      @chat  = nil
     end
 
+    # GET /chats/:id
     def show
       @chat = Glancer::Chat.find_by(id: params[:id])
 
       unless @chat
-        flash[:alert] = "Chat not found"
-        redirect_to glancer.chats_path and return
+        redirect_to glancer.root_path, alert: "Chat not found"
+        return
       end
 
-      @chats = Glancer::Chat.order(created_at: :desc)
+      @chats    = Glancer::Chat.order(created_at: :desc)
       @messages = @chat.messages.order(:created_at)
-
-      respond_to do |format|
-        format.html { render :index } # Sempre renderize o index que contém a estrutura completa
-        format.turbo_stream do
-          render turbo_stream: turbo_stream.replace("main-content", partial: "glancer/chats/show",
-                                                                    locals: { chat: @chat, chats: @chats, messages: @messages })
-        end
-      end
     end
 
-    def create
-      @chat = Glancer::Chat.create!(title: "Chat #{Time.current.strftime("%H:%M")}")
-      @chats = Glancer::Chat.order(created_at: :desc)
+    # POST /start — creates chat + first message, returns JSON { chat_id: }
+    def start
+      content = params[:content].to_s.strip
+      return render json: { error: "Message required" }, status: :unprocessable_entity if content.blank?
 
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace("sidebar-chat-list", partial: "glancer/chats/sidebar_chat_list",
-                                                      locals: { chat: @chat, chats: @chats }),
-            turbo_stream.replace("main-content", partial: "glancer/chats/show",
-                                                 locals: { chat: @chat, chats: @chats, messages: @chat.messages.order(:created_at) })
-          ]
-        end
-        format.html { redirect_to glancer.chat_path(@chat) }
+      @chat    = Glancer::Chat.create!(title: "New Chat")
+      @message = @chat.messages.create!(role: :user, content: content)
+
+      response = Glancer::Workflow.run(@chat.id, @message.content)
+
+      @response_message = @chat.messages.create!(
+        role:         :assistant,
+        content:      format_response(response),
+        sql:          response[:sql],
+        user_message: @message,
+        successful:   response[:successful]
+      )
+
+      if @response_message.sql.present?
+        @response_message.sql_versions.create!(sql: @response_message.sql, source: :generated)
       end
+
+      title = Glancer::Workflow::LLM.generate_title(@message.content)
+      @chat.update!(title: title)
+
+      render json: { chat_id: @chat.id }
+    rescue StandardError => e
+      Glancer::Utils::Logger.error("ChatsController#start", e.message)
+      render json: { error: e.message }, status: :internal_server_error
     end
 
+    # DELETE /chats/:id
     def destroy
       @chat = Glancer::Chat.find(params[:id])
-      @chats = Glancer::Chat.order(created_at: :desc)
-
       @chat.destroy!
+      redirect_to glancer.root_path
+    end
 
-      respond_to do |format|
-        format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.replace("sidebar-chat-list", partial: "glancer/chats/sidebar_chat_list",
-                                                      locals: { chat: @chat, chats: @chats }),
-            turbo_stream.replace("main-content", partial: "glancer/chats/show",
-                                                 locals: { chat: @chat, chats: @chats, messages: @chat.messages.order(:created_at) })
-          ]
-        end
-        format.html { redirect_to glancer.chats_path }
-      end
+    private
+
+    def format_response(result)
+      result[:content]
     end
   end
 end

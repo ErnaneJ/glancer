@@ -21,34 +21,65 @@ Glancer.configure do |config|
   config.statement_timeout = 30.seconds
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # LLM — Chat / SQL generation
+  # LLM — Default provider (fallback for all roles below)
   # ─────────────────────────────────────────────────────────────────────────────
 
-  # Provider for chat completions (SQL generation and response humanization).
+  # Default provider for all LLM calls. Used when role-specific providers are nil.
   # Accepted: :gemini | :openai | :openrouter
   config.llm_provider = :gemini
 
-  # Model name for completions. Must be valid for the selected provider.
+  # Default model. Used when role-specific models are nil.
   #   Gemini:     "gemini-2.0-flash", "gemini-1.5-pro", ...
   #   OpenAI:     "gpt-4o", "gpt-4o-mini", ...
   #   OpenRouter: "anthropic/claude-3.5-sonnet", "openai/gpt-4o", ...
   config.llm_model = "gemini-2.0-flash"
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # LLM — SQL generation (overrides default for query building)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Provider used for SQL generation. Nil → falls back to llm_provider.
+  # Useful when you want a code-focused model (e.g. gpt-4o) for SQL generation
+  # and a cheaper model for responses.
+  # Accepted: nil | :gemini | :openai | :openrouter
+  config.sql_provider = nil
+
+  # Model used for SQL generation. Nil → falls back to llm_model.
+  config.sql_model = nil
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # LLM — Chat responses (overrides default for humanized answers)
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Provider used for humanizing results and generating chat responses.
+  # Nil → falls back to llm_provider.
+  # Accepted: nil | :gemini | :openai | :openrouter
+  config.chat_provider = nil
+
+  # Model used for chat responses. Nil → falls back to llm_model.
+  config.chat_model = nil
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # LLM — Embeddings
   # ─────────────────────────────────────────────────────────────────────────────
 
   # Provider used exclusively for generating embeddings (indexing + retrieval).
-  # Defaults to llm_provider when nil. Useful when using OpenRouter for chat
-  # but a dedicated provider (Gemini/OpenAI) for embeddings, since OpenRouter
-  # does not reliably expose embedding models.
+  # Defaults to llm_provider when nil.
+  #
+  # IMPORTANT — OpenRouter embedding support:
+  #   OpenRouter does not expose a native embedding API. If you use OpenRouter
+  #   for chat/SQL, set embedding_provider to :gemini or :openai to avoid errors.
+  #   If you must use an OpenRouter embedding model anyway, set embedding_model
+  #   explicitly (e.g., "openai/text-embedding-3-small") — Glancer will bypass
+  #   the model registry check automatically.
+  #
   # Accepted: nil | :gemini | :openai | :openrouter
   config.embedding_provider = nil
 
-  # Embedding model override. When nil, Glancer picks the best default for the
-  # resolved embedding provider:
-  #   Gemini:  "text-embedding-004"
-  #   OpenAI:  "text-embedding-3-large"
+  # Embedding model override. When nil, Glancer uses the provider default:
+  #   Gemini:     "text-embedding-004"
+  #   OpenAI:     "text-embedding-3-large"
+  #   OpenRouter: "openai/text-embedding-3-small"  (must be passed as model ID)
   config.embedding_model = nil
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -61,11 +92,25 @@ Glancer.configure do |config|
   # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
   # config.api_key           = ENV["LLM_API_KEY"]  # generic fallback for any provider
 
-  # ─── OpenRouter example ────────────────────────────────────────────────────
+  # ─── Example: different providers per role ──────────────────────────────────
+  # config.llm_provider       = :gemini                        # default fallback
+  # config.llm_model          = "gemini-2.0-flash"
+  # config.sql_provider       = :openai                        # code-focused model for SQL
+  # config.sql_model          = "gpt-4o"
+  # config.chat_provider      = :gemini                        # cheaper for chat
+  # config.chat_model         = "gemini-2.0-flash"
+  # config.embedding_provider = :gemini                        # dedicated embeddings
+  # config.embedding_model    = "text-embedding-004"
+  # config.gemini_api_key     = ENV["GEMINI_API_KEY"]
+  # config.openai_api_key     = ENV["OPENAI_API_KEY"]
+  # ─── Example: OpenRouter for chat/SQL, Gemini for embeddings (recommended) ──
+  # OpenRouter does not expose a native embedding API, so always pair it with
+  # a dedicated embedding provider (:gemini or :openai).
   # config.llm_provider       = :openrouter
   # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
   # config.llm_model          = "anthropic/claude-3.5-sonnet"
-  # config.embedding_provider = :gemini          # recommended: dedicated embed provider
+  # config.sql_model          = "deepseek/deepseek-r1:free"
+  # config.embedding_provider = :gemini
   # config.gemini_api_key     = ENV["GEMINI_API_KEY"]
   # config.embedding_model    = "text-embedding-004"
   # ───────────────────────────────────────────────────────────────────────────
@@ -141,4 +186,13 @@ Glancer.configure do |config|
   # :info  → normal operational messages (default)
   # :debug → verbose, includes prompts and full backtraces
   config.log_verbosity = :info
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Integrations
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Blazer integration: enables an "Open in Blazer" button on generated SQL queries.
+  # Auto-detected if the blazer gem is installed (defaults to "/blazer").
+  # Set explicitly to override the path, or to "" / nil to disable.
+  # config.blazer_path = "/blazer"
 end
