@@ -16,9 +16,9 @@
     <img src="https://raw.githubusercontent.com/ErnaneJ/glancer/badge-generator/.github/badges/coverage.svg" alt="Coverage">
   </a>
   <!-- Gem version — add once published to RubyGems -->
-  <!-- <a href="https://rubygems.org/gems/glancer">
+  <a href="https://rubygems.org/gems/glancer">
     <img src="https://badge.fury.io/rb/glancer.svg" alt="Gem Version">
-  </a> -->
+  </a>
   <!-- License -->
   <a href="LICENSE.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
@@ -33,12 +33,6 @@
   </a>
 </p>
 
----
-
-> **Note:** The RubyGems version badge will be activated once the gem is published. Add `[![Gem Version](https://badge.fury.io/rb/glancer.svg)](https://rubygems.org/gems/glancer)` to the badge row above.
-
----
-
 ## What is Glancer?
 
 Glancer is a **Ruby on Rails engine** that mounts a full-featured chat interface inside your app and lets anyone on your team query the database in plain language — no SQL knowledge required.
@@ -52,11 +46,9 @@ You ask a question. Glancer retrieves the relevant schema context, asks the LLM 
 
 <!-- Screenshot / demo GIF placeholder -->
 <!-- Add a screenshot of the chat UI here -->
-<!-- <p align="center">
-  <img src="./.github/assets/demo.gif" alt="Glancer demo" width="80%">
-</p> -->
-
----
+<p align="center">
+  <img src="./.github/assets/chat-print.png" alt="Glancer demo" width="100%">
+</p>
 
 ## Why Glancer?
 
@@ -71,38 +63,11 @@ Key design decisions:
 - **No external vector store** — embeddings live in your existing database. No extra infrastructure.
 - **Rails-native** — mounted as an engine, uses Turbo and Stimulus, installs with one generator.
 
----
+## How?
 
-## Architecture
+Glancer implements a **RAG (Retrieval-Augmented Generation)** pipeline. 
 
-Glancer implements a **RAG (Retrieval-Augmented Generation)** pipeline. Each question goes through six stages:
-
-```
-Question
-   │
-   ▼
-1. Embed ──────────── Converts the question to a vector embedding
-   │
-   ▼
-2. Retrieve ────────── Cosine similarity search over glancer_embeddings
-   │                   Weights: schema 1.3×, context 1.2×, models 1.1×
-   ▼
-3. Generate SQL ─────── LLM receives schema chunks + history → returns SELECT
-   │
-   ▼
-4. Validate ────────── SQLSanitizer (blocks destructive keywords)
-   │                   SQLValidator (checks table names against index)
-   ▼
-5. Execute ─────────── Read-only transaction (always rolls back)
-   │                   Audit record written with run_id UUID
-   ▼
-6. Humanize ────────── Second LLM call explains the query in plain language
-                        Response cached in memory (configurable TTL)
-```
-
-### Auto-retry
-
-If execution fails (e.g. a column name hallucination), the error is fed back to the LLM and a corrected query is attempted — up to **3 times** — before returning a friendly failure message.
+![Glancer Flow](./.github/assets/glancer-flow-bg.svg)
 
 ### Database tables
 
@@ -115,16 +80,12 @@ If execution fails (e.g. a column name hallucination), the error is fed back to 
 | `glancer_settings` | Runtime configuration (e.g. custom instructions) |
 | `glancer_sql_versions` | SQL edit history per message |
 
----
-
 ## Requirements
 
 - Ruby ≥ 3.1
 - Rails ≥ 7.0
 - An API key for **Gemini**, **OpenAI**, or **OpenRouter**
 - SQLite, PostgreSQL, or MySQL/MariaDB
-
----
 
 ## Installation
 
@@ -164,11 +125,9 @@ rails glancer:index:all
 
 ### 5. Visit the interface
 
-```
+```bash
 http://localhost:3000/glancer
 ```
-
----
 
 ## Configuration
 
@@ -234,8 +193,6 @@ end
 | `log_output_path` | `nil` | Log file path; `nil` writes to stdout |
 | `blazer_path` | `nil` (auto) | Blazer base path; auto-detected when `blazer` gem is present |
 
----
-
 ## Indexing
 
 Glancer embeds your schema, models, and custom context into the `glancer_embeddings` table. Run indexing after installation and whenever the schema changes significantly.
@@ -263,8 +220,6 @@ rails glancer:version         # Print gem version
 
 Add `--glancer-ignore` as the **first line** of the file to skip it during indexing.
 
----
-
 ## Chat Interface
 
 <!-- Screenshot placeholder -->
@@ -286,8 +241,6 @@ Visit `/glancer` in your browser. The interface provides:
 - **Custom instructions** — set persistent system-level instructions at `/glancer/settings`.
 - **Schema viewer** — browse indexed tables and columns at `/glancer/db-schema`.
 
----
-
 ## Safety
 
 Glancer is designed to be safe to deploy on production databases.
@@ -300,8 +253,6 @@ Glancer is designed to be safe to deploy on production databases.
 | **Statement timeout** | `statement_timeout` (PG) / `max_execution_time` (MySQL) kills runaway queries server-side |
 | **Audit trail** | Every attempt is recorded in `glancer_audits` with a `run_id` UUID injected as a SQL comment |
 | **Replica support** | Route queries to a read-only replica via `config.read_only_db` |
-
----
 
 ## Usage via Ruby classes
 
@@ -328,8 +279,6 @@ Glancer::Workflow::SQLSanitizer.ensure_safe!("SELECT * FROM users")
 Glancer::Workflow::SQLValidator.validate_tables_exist!("SELECT * FROM orders")
 ```
 
----
-
 ## Routes
 
 The engine mounts the following routes under the prefix configured in your `routes.rb` (default `/glancer`):
@@ -345,8 +294,6 @@ POST /glancer/messages/:id/run_sql → messages#run_sql (re-execute saved SQL)
 GET  /glancer/db-schema            → db_schema#show
 GET  /glancer/settings             → settings#show
 ```
-
----
 
 ## Development
 
@@ -374,8 +321,6 @@ To develop against a host Rails application, use a path reference in its `Gemfil
 gem "glancer", path: "../glancer"
 ```
 
----
-
 ## Contributing
 
 Bug reports, feature requests, and pull requests are welcome on [GitHub](https://github.com/ErnaneJ/glancer).
@@ -389,8 +334,6 @@ Before opening a pull request:
 5. Open a pull request with a clear description of what changed and why.
 
 Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
-
----
 
 ## License
 
