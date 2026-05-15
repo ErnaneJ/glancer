@@ -88,4 +88,4 @@ jobs:
           name: ${{ steps.coverage.outputs.pct }}
           prefix: coverage
           path: .github/badges/coverage.svg
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.TOKEN }}
