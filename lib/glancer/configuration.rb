@@ -4,7 +4,7 @@ module Glancer
   class Configuration
     ADAPTERS_SUPPORTED = %i[postgres mysql mysql2 sqlite].freeze
     LLM_PROVIDERS = %i[gemini openai openrouter].freeze
-    LOG_VERBOSITY_LEVELS = %i[none info debug].freeze
+    LOG_VERBOSITY_LEVELS = %i[silent none info debug].freeze
 
     # Default embedding models per provider.
     # OpenRouter does not expose a native embedding API; the recommended approach
@@ -152,7 +152,7 @@ module Glancer
     end
 
     def log_verbosity=(value)
-      raise ArgumentError, "log_verbosity must be :none, :info, or :debug" unless LOG_VERBOSITY_LEVELS.include?(value)
+      raise ArgumentError, "log_verbosity must be :silent, :none, :info, or :debug" unless LOG_VERBOSITY_LEVELS.include?(value)
 
       @log_verbosity = value
     end

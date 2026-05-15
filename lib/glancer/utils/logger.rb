@@ -4,6 +4,7 @@ module Glancer
   module Utils
     class Logger
       VERBOSITY_LEVELS = {
+        silent: -2,
         none: -1,
         info: 1,
         debug: 2
@@ -50,7 +51,7 @@ module Glancer
             :info
           end
 
-          # Always allow warn and error
+          return if verbosity == :silent
           return if %i[info debug].include?(level) &&
                     VERBOSITY_LEVELS[level] > VERBOSITY_LEVELS[verbosity]
 

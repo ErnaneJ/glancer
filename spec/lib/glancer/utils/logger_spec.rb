@@ -47,7 +47,10 @@ RSpec.describe Glancer::Utils::Logger do
   end
 
   describe "verbosity filtering" do
-    before { Glancer.configuration.log_verbosity = :none }
+    before do
+      Glancer.configuration.log_verbosity = :none
+      Glancer.configuration.log_output_path = nil
+    end
 
     it "suppresses info messages at :none verbosity" do
       expect { described_class.info("T", "suppressed") }.not_to output.to_stdout
@@ -59,6 +62,12 @@ RSpec.describe Glancer::Utils::Logger do
 
     it "always outputs warn messages regardless of verbosity" do
       expect { described_class.warn("T", "a warning") }.to output(/a warning/).to_stdout
+    end
+
+    it "suppresses everything with :silent verbosity" do
+      Glancer.configuration.log_verbosity = :silent
+      expect { described_class.error("T", "silenced error") }.not_to output.to_stdout
+      expect { described_class.warn("T", "silenced warning") }.not_to output.to_stdout
     end
   end
 

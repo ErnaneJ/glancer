@@ -17,7 +17,7 @@ RSpec.describe Glancer::Configuration do
     end
 
     it "defines LOG_VERBOSITY_LEVELS" do
-      expect(described_class::LOG_VERBOSITY_LEVELS).to contain_exactly(:none, :info, :debug)
+      expect(described_class::LOG_VERBOSITY_LEVELS).to contain_exactly(:silent, :none, :info, :debug)
     end
 
     it "defines EMBEDDING_DEFAULTS for each LLM provider" do

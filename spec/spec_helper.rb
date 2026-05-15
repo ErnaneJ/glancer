@@ -122,7 +122,7 @@ RSpec.configure do |config|
       c.llm_provider   = :gemini
       c.llm_model      = "test-model"
       c.gemini_api_key = "test-api-key"
-      c.log_verbosity  = :none
+      c.log_verbosity  = :silent
     end
   end
 end
