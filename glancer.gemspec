@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["ernane.junior25@gmail.com"]
 
   spec.summary = "RAG-driven AI interface for querying Rails databases"
-  spec.description = "Glancer is a Ruby on Rails engine that enables natural language queries over your database using RAG (Retrieval-Augmented Generation) and LLMs."
+  spec.description = "Glancer is a Ruby on Rails engine that enables natural language queries over your database using RAG and LLMs."
   spec.homepage = "https://github.com/ernanej/glancer"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"

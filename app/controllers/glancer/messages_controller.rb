@@ -74,7 +74,7 @@ module Glancer
       end
 
       query = Blazer::Query.create!(
-        name: "Glancer: #{@message.user_message&.content&.truncate(60) || 'Query'}",
+        name: "Glancer: #{@message.user_message&.content&.truncate(60) || "Query"}",
         statement: @message.sql.strip
       )
 
