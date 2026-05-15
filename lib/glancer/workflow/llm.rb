@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   module Workflow
     class LLM
@@ -22,8 +23,10 @@ module Glancer
 
           CRITICAL RULES:
           - **Language Match**: Respond ONLY in the same language as the user's question.
-          - **Never say the query "ran", "executed", or "returned"** — the query was GENERATED to answer the user's question. The actual results are displayed separately in the UI.
-          - **What to explain**: Describe WHAT the query does logically (e.g., "it joins orders with customers to count purchases per month") and WHY it answers the question.
+          - **Never say the query "ran", "executed", or "returned"** — the query was GENERATED to answer the user's question.
+            The actual results are displayed separately in the UI.
+          - **What to explain**: Describe WHAT the query does logically (e.g., "it joins orders with customers to count
+            purchases per month") and WHY it answers the question.
           - **Brevity**: 2–4 sentences maximum. No bullet points unless truly necessary.
           - **No SQL repeat**: The SQL is already shown; do not include it in your response.
           - **No hallucinations**: You have no knowledge of the actual result values. Do not describe or infer data values.

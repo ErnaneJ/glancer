@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class Setting < ApplicationRecord
     self.table_name = "glancer_settings"
@@ -15,7 +16,7 @@ module Glancer
       record.save!
     end
 
-    def self.set_many(hash)
+    def self.store_many(hash)
       hash.each { |k, v| set(k, v) }
     end
   end

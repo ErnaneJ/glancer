@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   module Workflow
     def self.run(chat_id, question, cache: true)

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   module Workflow
     class SQLExtractor
@@ -23,8 +24,9 @@ module Glancer
                   text.lines.map(&:strip).reject(&:empty?).join(" ")
                 end
 
+          fallback_type = start_idx ? " (SQL found at line #{start_idx})" : " (raw join)"
           Glancer::Utils::Logger.debug("Workflow::SQLExtractor",
-                                       "No code block found. Fallback extraction#{start_idx ? " (SQL found at line #{start_idx})" : " (raw join)"}.")
+                                       "No code block found. Fallback extraction#{fallback_type}.")
         end
 
         Glancer::Utils::Logger.debug("Workflow::SQLExtractor", "Final extracted SQL:\n#{sql}")

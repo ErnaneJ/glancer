@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 Glancer::Engine.routes.draw do
   root to: "chats#index"
 

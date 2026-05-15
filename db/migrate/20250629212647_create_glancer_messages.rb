@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # 20250629212644_create_glancer_messages.rb
 class CreateGlancerMessages < ActiveRecord::Migration[6.1]
   def change

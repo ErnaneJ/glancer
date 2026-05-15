@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class SchemaController < Glancer::ApplicationController
     layout "glancer/application"

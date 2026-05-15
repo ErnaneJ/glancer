@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class SettingsController < ApplicationController
     layout "glancer/application"
@@ -15,7 +16,7 @@ module Glancer
 
     def update
       allowed = params.require(:settings).permit(:ui_language, :speech_language, :custom_instructions)
-      Glancer::Setting.set_many(allowed.to_h)
+      Glancer::Setting.store_many(allowed.to_h)
       redirect_to glancer.settings_path, notice: t("glancer.settings.saved")
     end
   end

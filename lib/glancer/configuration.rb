@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class Configuration
     ADAPTERS_SUPPORTED = %i[postgres mysql mysql2 sqlite].freeze
@@ -226,7 +227,7 @@ module Glancer
 
     def embedding_provider=(value)
       unless value.nil? || LLM_PROVIDERS.include?(value)
-        raise ArgumentError, "embedding_provider must be nil or one of: #{LLM_PROVIDERS.join(', ')}"
+        raise ArgumentError, "embedding_provider must be nil or one of: #{LLM_PROVIDERS.join(", ")}"
       end
 
       @embedding_provider = value
@@ -251,7 +252,7 @@ module Glancer
 
     def sql_provider=(value)
       unless value.nil? || LLM_PROVIDERS.include?(value)
-        raise ArgumentError, "sql_provider must be nil or one of: #{LLM_PROVIDERS.join(', ')}"
+        raise ArgumentError, "sql_provider must be nil or one of: #{LLM_PROVIDERS.join(", ")}"
       end
 
       @sql_provider = value
@@ -265,7 +266,7 @@ module Glancer
 
     def chat_provider=(value)
       unless value.nil? || LLM_PROVIDERS.include?(value)
-        raise ArgumentError, "chat_provider must be nil or one of: #{LLM_PROVIDERS.join(', ')}"
+        raise ArgumentError, "chat_provider must be nil or one of: #{LLM_PROVIDERS.join(", ")}"
       end
 
       @chat_provider = value

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class SqlVersion < ApplicationRecord
     self.table_name = "glancer_sql_versions"

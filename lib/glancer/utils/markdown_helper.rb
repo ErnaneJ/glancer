@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "commonmarker"
 module Glancer
   module Utils

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class Message < ApplicationRecord
     belongs_to :chat, class_name: "Glancer::Chat"

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class CreateGlancerEmbeddings < ActiveRecord::Migration[7.0]
   def change
     create_table :glancer_embeddings do |t|

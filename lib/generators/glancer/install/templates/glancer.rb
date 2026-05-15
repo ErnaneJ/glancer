@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # Glancer configuration
 # Full reference: https://github.com/ernanej/glancer
 

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class MessagesController < Glancer::ApplicationController
     def create
@@ -19,9 +20,7 @@ module Glancer
         llm_model: used_model
       )
 
-      if @response_message.sql.present?
-        @response_message.sql_versions.create!(sql: @response_message.sql, source: :generated)
-      end
+      @response_message.sql_versions.create!(sql: @response_message.sql, source: :generated) if @response_message.sql.present?
 
       # Generate title from first user message
       if @chat.messages.where(role: :user).count == 1

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
-# rubocop:disable Metrics/ClassLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+
+# rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 module Glancer
   # Analyzes query result data and returns an array of Chart.js-compatible config hashes.
   # Returns [] when no meaningful chart can be produced. No data is sent to any AI.
@@ -228,4 +229,4 @@ module Glancer
                          :numeric?, :to_f, :humanize
   end
 end
-# rubocop:enable Metrics/ClassLength, Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity, Metrics/MethodLength
+# rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity

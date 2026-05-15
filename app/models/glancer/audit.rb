@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Glancer
   class Audit < ApplicationRecord
     self.table_name = "glancer_audits"

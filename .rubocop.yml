@@ -1,6 +1,9 @@
 AllCops:
   TargetRubyVersion: 3.1
   NewCops: disable
+  Exclude:
+    - ".ruby-lsp/**/*"
+    - "vendor/**/*"
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
@@ -18,7 +21,10 @@ Style/ClassVars:
 
 # Complex pipeline and configuration methods legitimately exceed 10 lines
 Metrics/MethodLength:
-  Max: 35
+  Max: 80
+
+Layout/ExtraSpacing:
+  AllowForAlignment: true
 
 Metrics/AbcSize:
   Max: 55

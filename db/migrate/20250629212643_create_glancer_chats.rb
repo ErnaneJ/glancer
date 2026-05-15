@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class CreateGlancerChats < ActiveRecord::Migration[6.1]
   def change
     create_table :glancer_chats do |t|

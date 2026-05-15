@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "indexer/schema_indexer"
 require_relative "indexer/model_indexer"
 require_relative "indexer/context_indexer"
