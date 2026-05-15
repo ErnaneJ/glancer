@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 namespace :glancer do
   desc "Show current Glancer and RubyLLM versions"
   task :version do

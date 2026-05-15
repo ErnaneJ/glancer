@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 namespace :glancer do
   desc "Install Tailwind CSS"
   task :install do

@@ -156,9 +156,9 @@ Glancer.configure do |config|
 
   # Relevance multipliers per document type (must be ≥ 1.0).
   # Higher weight = ranked higher in retrieved context.
-  config.schema_documents_weight = 1.3  # db/schema.rb table definitions
-  config.context_documents_weight = 1.2  # custom context Markdown file
-  config.models_documents_weight = 1.1  # ActiveRecord model files
+  config.schema_documents_weight = 1.3 # db/schema.rb table definitions
+  config.context_documents_weight = 1.2 # custom context Markdown file
+  config.models_documents_weight = 1.1 # ActiveRecord model files
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Conversation
