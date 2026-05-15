@@ -189,9 +189,9 @@ RSpec.describe Glancer::ChartAnalyzer do
   # ── date_string? rescue path ──────────────────────────────────────────────
 
   describe ".date_string? rescue path" do
-    it "returns false when Regexp#match? raises" do
-      allow_any_instance_of(String).to receive(:match?).and_raise(StandardError, "regex error")
-      expect(described_class.send(:date_string?, "2024-01")).to be(false)
+    it "returns false when match? raises" do
+      exploding = Class.new(String) { def match?(*_) = raise(StandardError, "oops") }.new("2024-01")
+      expect(described_class.send(:date_string?, exploding)).to be(false)
     end
   end
 
