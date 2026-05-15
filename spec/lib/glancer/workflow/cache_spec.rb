@@ -80,6 +80,40 @@ RSpec.describe Glancer::Workflow::Cache do
     end
   end
 
+  # ── rescue paths ─────────────────────────────────────────────────────────
+
+  describe "rescue paths" do
+    it "fetch returns nil when an internal error occurs (e.g. expired? raises)" do
+      described_class.write(question, result)
+      allow(described_class).to receive(:expired?).and_raise(RuntimeError, "unexpected")
+      expect(described_class.fetch(question)).to be_nil
+    end
+
+    it "write handles errors gracefully without raising" do
+      store_mock = double("store")
+      allow(store_mock).to receive(:[]=).and_raise(StandardError, "write error")
+      allow(store_mock).to receive(:clear)
+      allow(store_mock).to receive(:[]).and_return(nil)
+      Glancer::Workflow::Cache.class_variable_set(:@@store, store_mock)
+      allow(Glancer::Utils::Logger).to receive(:error)
+      allow(Glancer::Utils::Logger).to receive(:debug)
+      expect { described_class.write(question, result) }.not_to raise_error
+    ensure
+      Glancer::Workflow::Cache.class_variable_set(:@@store, {})
+    end
+
+    it "clear handles unexpected errors gracefully" do
+      store_mock = double("store")
+      allow(store_mock).to receive(:clear).and_raise(StandardError, "cannot clear")
+      Glancer::Workflow::Cache.class_variable_set(:@@store, store_mock)
+      allow(Glancer::Utils::Logger).to receive(:error)
+      allow(Glancer::Utils::Logger).to receive(:debug)
+      expect { described_class.clear }.not_to raise_error
+    ensure
+      Glancer::Workflow::Cache.class_variable_set(:@@store, {})
+    end
+  end
+
   describe ".expired?" do
     context "with a fresh entry" do
       it "returns false" do

@@ -12,6 +12,7 @@ if ENV["COVERAGE"] || ENV["CI"]
   SimpleCov.start do
     add_filter "/spec/"
     add_filter "/lib/generators/"
+    add_filter "/lib/glancer/version.rb" # loaded by bundler before SimpleCov starts
 
     add_group "Workflow",      "lib/glancer/workflow"
     add_group "Indexers",      "lib/glancer/indexer"

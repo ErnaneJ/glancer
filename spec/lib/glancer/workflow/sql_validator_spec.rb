@@ -120,6 +120,26 @@ RSpec.describe Glancer::Workflow::SQLValidator do
       Glancer.configuration.adapter = :postgres
       expect(described_class.system_table?("information_schema.tables")).to be(true)
     end
+
+    it "returns true for pg_catalog when adapter is postgres" do
+      Glancer.configuration.adapter = :postgres
+      expect(described_class.system_table?("pg_catalog")).to be(true)
+    end
+
+    it "returns true for information_schema when adapter is mysql2" do
+      Glancer.configuration.adapter = :mysql2
+      expect(described_class.system_table?("information_schema")).to be(true)
+    end
+
+    it "returns false for a user table with mysql2 adapter" do
+      Glancer.configuration.adapter = :mysql2
+      expect(described_class.system_table?("orders")).to be(false)
+    end
+
+    it "returns false for a user table with an unknown adapter" do
+      allow(Glancer.configuration).to receive(:resolved_adapter).and_return("unknown_db")
+      expect(described_class.system_table?("orders")).to be(false)
+    end
   end
 
   # ── indexed_schema_table_names ────────────────────────────────────────────

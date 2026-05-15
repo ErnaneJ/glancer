@@ -95,6 +95,11 @@ RSpec.describe Glancer::Workflow::Builder do
       expect(described_class.recent_examples).to be_empty
     end
 
+    it "returns [] when the Audit query raises (rescue path)" do
+      allow(Glancer::Audit).to receive(:where).and_raise(StandardError, "DB unavailable")
+      expect(described_class.recent_examples).to eq([])
+    end
+
     it "excludes audits without a question" do
       Glancer::Audit.create!(
         question: nil,

@@ -117,15 +117,55 @@ RSpec.describe Glancer::ChartAnalyzer do
     end
 
     context "multi-series (date + group + metric)" do
+      # Need enough rows so low_cardinality? passes:
+      # uniq(regions=2) < (rows / 2.0).ceil → 2 < ceil(6/2) = 3 → true ✓
+      # Values must vary (uniq > 1) so measure_cols filter passes ✓
       let(:data) do
-        months  = %w[2024-01 2024-02]
+        months  = %w[2024-01 2024-02 2024-03]
         regions = %w[North South]
-        months.flat_map do |m|
-          regions.map { |r| { "month" => m, "region" => r, "sales" => rand(100) } }
+        months.each_with_index.flat_map do |m, i|
+          regions.map { |r| { "month" => m, "region" => r, "sales" => (i + 1) * 100 } }
         end
       end
 
       it "includes a multi-series line chart" do
+        charts = described_class.analyze(data)
+        types  = charts.map { |c| c[:type] }
+        expect(types).to include("line")
+      end
+
+      it "builds a dataset per region" do
+        chart = described_class.analyze(data).find { |c| c[:type] == "line" && c[:datasets].size >= 2 }
+        expect(chart).not_to be_nil
+        expect(chart[:datasets].size).to eq(2)
+      end
+
+      it "returns nil for multi-series when group cardinality exceeds MAX_BAR_CATEGORIES" do
+        # 61 distinct groups > MAX_BAR_CATEGORIES(60) → build_multi_series returns nil → compacted out
+        many_regions = (1..61).map { |i| "region_#{i}" }
+        big_data = many_regions.flat_map do |r|
+          %w[2024-01 2024-02 2024-03].map { |m| { "month" => m, "region" => r, "sales" => 10 } }
+        end
+        # low_cardinality requires uniq < rows/2; 61 < 183/2=92 → true (group_col detected)
+        charts = described_class.analyze(big_data)
+        multi = charts.select { |c| c[:type] == "line" && c[:datasets]&.size.to_i > 10 }
+        # build_multi_series returns nil → it gets compacted out
+        expect(multi).to be_empty
+      end
+    end
+
+    context "multi-series with non-monthly date strings" do
+      # Dates like "2024-01-01" are not monthly_period? → raw_dates.sort path (L156)
+      # Values must vary so measure_cols passes the uniqueness filter
+      let(:data) do
+        dates   = %w[2024-01-01 2024-02-01 2024-03-01]
+        regions = %w[East West]
+        dates.each_with_index.flat_map do |d, i|
+          regions.map { |r| { "date" => d, "region" => r, "sales" => (i + 1) * 50 } }
+        end
+      end
+
+      it "still produces a line chart using sorted raw dates" do
         charts = described_class.analyze(data)
         types  = charts.map { |c| c[:type] }
         expect(types).to include("line")
@@ -135,9 +175,23 @@ RSpec.describe Glancer::ChartAnalyzer do
     context "on internal error" do
       it "returns [] instead of raising" do
         bad_data = [{ a: nil, b: nil }, { a: nil, b: nil }]
-        # ChartAnalyzer should rescue StandardError and return []
         expect { described_class.analyze(bad_data) }.not_to raise_error
       end
+
+      it "returns [] when an unexpected StandardError is raised internally" do
+        allow(described_class).to receive(:detect_date_column).and_raise(StandardError, "internal failure")
+        data = [{ "a" => "x", "b" => 1 }, { "a" => "y", "b" => 2 }]
+        expect(described_class.analyze(data)).to eq([])
+      end
+    end
+  end
+
+  # ── date_string? rescue path ──────────────────────────────────────────────
+
+  describe ".date_string? rescue path" do
+    it "returns false when Regexp#match? raises" do
+      allow_any_instance_of(String).to receive(:match?).and_raise(StandardError, "regex error")
+      expect(described_class.send(:date_string?, "2024-01")).to be(false)
     end
   end
 

@@ -103,6 +103,11 @@ RSpec.describe Glancer::Workflow::PromptBuilder do
   # ── .custom_instructions_block ────────────────────────────────────────────
 
   describe ".custom_instructions_block" do
+    it "returns empty string when Glancer::Setting.get raises" do
+      allow(Glancer::Setting).to receive(:get).and_raise(StandardError, "DB error")
+      expect(described_class.custom_instructions_block).to eq("")
+    end
+
     it "returns an empty string when no custom instructions are set" do
       expect(described_class.custom_instructions_block).to eq("")
     end

@@ -139,5 +139,11 @@ RSpec.describe Glancer::Workflow::Executor do
       expect(connection).to receive(:execute).with(/SET max_execution_time/)
       described_class.apply_statement_timeout(connection)
     end
+
+    it "does not raise when the DB rejects the timeout command" do
+      Glancer.configuration.adapter = :postgres
+      allow(connection).to receive(:execute).and_raise(StandardError, "unsupported")
+      expect { described_class.apply_statement_timeout(connection) }.not_to raise_error
+    end
   end
 end

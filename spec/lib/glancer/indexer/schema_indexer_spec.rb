@@ -79,6 +79,15 @@ RSpec.describe Glancer::Indexer::SchemaIndexer do
       expect(described_class.index!).to eq([])
     end
 
+    it "silently skips chunks whose table name cannot be extracted" do
+      # Use {nonstandard} so extract_table_name regex cannot match [a-zA-Z0-9_]+
+      schema_without_name = "  create_table {nonstandard} do |t|\n    t.string :foo\n  end\n"
+      allow(File).to receive(:read).with(schema_path).and_return(schema_without_name)
+      result = described_class.index!
+      table_chunks = result.reject { |c| c[:source_path].to_s.end_with?("#foreign_keys") }
+      expect(table_chunks).to be_empty
+    end
+
     it "raises Glancer::Error when File.read raises" do
       allow(File).to receive(:read).and_raise(IOError, "disk failure")
       expect { described_class.index! }.to raise_error(Glancer::Error, /Schema indexing failed/)

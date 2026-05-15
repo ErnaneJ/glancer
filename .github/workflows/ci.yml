@@ -69,3 +69,23 @@ jobs:
           ruby -e "exit(1) if ${COVERED}.to_f < 80" || {
             echo "::warning::Coverage ${COVERED}% is below the 80% threshold."
           }
+
+      - name: Extract coverage percentage for badge
+        if: matrix.ruby == '3.1'
+        id: coverage
+        run: |
+          PCT=$(ruby -e "
+            require 'json'
+            data = JSON.parse(File.read('coverage/coverage.json'))
+            puts data.dig('metrics', 'covered_percent').round(2)
+          ")
+          echo "pct=${PCT}%" >> "$GITHUB_OUTPUT"
+
+      - name: Generate coverage badge
+        if: matrix.ruby == '3.1' && github.ref == 'refs/heads/main'
+        uses: ernanej/badge-generator@main
+        with:
+          name: ${{ steps.coverage.outputs.pct }}
+          prefix: coverage
+          path: .github/badges/coverage.svg
+          github_token: ${{ secrets.GITHUB_TOKEN }}
