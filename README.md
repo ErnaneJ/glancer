@@ -13,7 +13,7 @@
   </a>
   <!-- Coverage -->
   <a href="https://github.com/ErnaneJ/glancer">
-    <img src="https://raw.githubusercontent.com/ErnaneJ/glancer/badge-generator/.github/badges/coverage.svg" alt="Coverage">
+    <img src="https://github.com/ErnaneJ/glancer/raw/refs/heads/badge-generator/.github/badges/coverage.svg" alt="Coverage">
   </a>
   <!-- Gem version — add once published to RubyGems -->
   <a href="https://rubygems.org/gems/glancer">
