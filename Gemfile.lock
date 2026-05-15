@@ -272,6 +272,10 @@ GEM
       json
       simplecov
     simplecov_json_formatter (0.1.4)
+    sqlite3 (1.7.3-aarch64-linux)
+    sqlite3 (1.7.3-arm64-darwin)
+    sqlite3 (1.7.3-x86_64-darwin)
+    sqlite3 (1.7.3-x86_64-linux)
     stimulus-rails (1.0.4)
       railties (>= 6.0.0)
     stringio (3.1.7)
@@ -310,6 +314,7 @@ DEPENDENCIES
   rubocop-rspec (~> 3.0)
   simplecov (~> 0.22)
   simplecov-json (~> 0.2)
+  sqlite3 (~> 1.7)
 
 BUNDLED WITH
    2.6.8

@@ -45,6 +45,7 @@ Metrics/BlockLength:
   Exclude:
     - "lib/tasks/**/*.rake"
     - "lib/generators/**/*.rb"
+    - "spec/**/*.rb"
 
 Layout/LineLength:
   Max: 140
