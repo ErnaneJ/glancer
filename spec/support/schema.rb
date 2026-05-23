@@ -21,7 +21,7 @@ ActiveRecord::Schema.define do
 
   create_table :glancer_embeddings, force: :cascade do |t|
     t.text    :content, null: false
-    t.text    :embedding # serialised Array via serialize :embedding, Array
+    t.json    :embedding
     t.string  :source_type
     t.string  :source_path
     t.timestamps
