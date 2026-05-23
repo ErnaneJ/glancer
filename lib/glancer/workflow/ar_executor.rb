@@ -44,7 +44,7 @@ module Glancer
       end
 
       def self.evaluate(code)
-        eval(code) # rubocop:disable Security/Eval
+        TOPLEVEL_BINDING.eval(code) # rubocop:disable Security/Eval
       end
 
       def self.normalize(result)
