@@ -3,38 +3,32 @@
 module Glancer
   module Workflow
     class LLM
-      def self.humanized_response(question, _data, sql)
+      def self.humanized_response(question, _data, code, mode: :sql)
         chat = RubyLLM.chat(
           provider: Glancer.configuration.resolved_chat_provider,
           model: Glancer.configuration.resolved_chat_model,
           assume_model_exists: true
         )
 
-        # Privacy layer: provide only a summary and a small sample to the LLM
-        # data_sample = data.first(3)
-        # data_summary = {
-        #   total_rows: data.size,
-        #   columns: data.first&.keys || [],
-        #   sample: data_sample
-        # }
+        code_label = mode == :activerecord ? "Ruby/ActiveRecord expression" : "SQL query"
+        code_lang  = mode == :activerecord ? "ruby" : "sql"
 
         context = <<~PROMPT
-          You are **Glancer**, a concise SQL assistant.
+          You are **Glancer**, a concise database assistant.
 
           CRITICAL RULES:
           - **Language Match**: Respond ONLY in the same language as the user's question.
-          - **Never say the query "ran", "executed", or "returned"** — the query was GENERATED to answer the user's question.
+          - **Never say the query "ran", "executed", or "returned"** — the code was GENERATED to answer the user's question.
             The actual results are displayed separately in the UI.
-          - **What to explain**: Describe WHAT the query does logically (e.g., "it joins orders with customers to count
-            purchases per month") and WHY it answers the question.
+          - **What to explain**: Describe WHAT the code does logically and WHY it answers the question.
           - **Brevity**: 2–4 sentences maximum. No bullet points unless truly necessary.
-          - **No SQL repeat**: The SQL is already shown; do not include it in your response.
+          - **No code repeat**: The generated code is already shown; do not include it in your response.
           - **No hallucinations**: You have no knowledge of the actual result values. Do not describe or infer data values.
           - **Formatting**: Use Markdown and bold for key terms.
 
-          SQL GENERATED to answer the user's question:
-          ```sql
-          #{sql}
+          #{code_label.upcase} GENERATED to answer the user's question:
+          ```#{code_lang}
+          #{code}
           ```
 
           USER QUESTION:
@@ -99,18 +93,20 @@ module Glancer
         question.truncate(45)
       end
 
-      def self.explain_error(question, error_message, sql)
+      def self.explain_error(question, error_message, code, mode: :sql)
         chat = RubyLLM.chat(
           provider: Glancer.configuration.resolved_chat_provider,
           model: Glancer.configuration.resolved_chat_model,
           assume_model_exists: true
         )
 
+        code_label = mode == :activerecord ? "Ruby/ActiveRecord expression" : "SQL"
+
         prompt = <<~PROMPT
           You are **Glancer**. The user asked: "#{question}".
-          We tried to generate SQL but failed after 3 attempts.
+          We tried to generate a #{code_label} but failed after 3 attempts.
           Last error: "#{error_message}"
-          Last SQL attempted: "#{sql}"
+          Last code attempted: "#{code}"
 
           Your task:
           1. Explain to the user in a friendly way that you couldn't process the request.

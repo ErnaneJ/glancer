@@ -5,6 +5,7 @@ module Glancer
     ADAPTERS_SUPPORTED = %i[postgres mysql mysql2 sqlite].freeze
     LLM_PROVIDERS = %i[gemini openai openrouter].freeze
     LOG_VERBOSITY_LEVELS = %i[silent none info debug].freeze
+    QUERY_MODES = %i[sql activerecord].freeze
 
     # Default embedding models per provider.
     # OpenRouter does not expose a native embedding API; the recommended approach
@@ -47,6 +48,7 @@ module Glancer
       self.chat_provider = nil       # nil → uses llm_provider (for humanized responses)
       self.chat_model = nil          # nil → uses llm_model (for humanized responses)
       self.blazer_path = nil         # nil → auto-detected if Blazer::Engine is mounted
+      self.query_mode = :sql         # :sql (default) or :activerecord
     end
 
     # === READERS ===
@@ -60,7 +62,7 @@ module Glancer
                 :embedding_provider, :embedding_model,
                 :sql_provider, :sql_model,
                 :chat_provider, :chat_model,
-                :blazer_path
+                :blazer_path, :query_mode
 
     # === WRITERS ===
     def adapter=(value)
@@ -298,6 +300,12 @@ module Glancer
       raise ArgumentError, "blazer_path must be nil or a String" unless value.nil? || value.is_a?(String)
 
       @blazer_path = value
+    end
+
+    def query_mode=(value)
+      raise ArgumentError, "query_mode must be one of: #{QUERY_MODES.join(", ")}" unless QUERY_MODES.include?(value)
+
+      @query_mode = value
     end
 
     # Returns the Blazer base path if Blazer is available, nil otherwise.

@@ -36,9 +36,13 @@ require "glancer/workflow/builder" # Glancer::Workflow::Builder
 require "glancer/workflow/cache" # Glancer::Workflow::Cache
 require "glancer/workflow/executor" # Glancer::Workflow::Executor
 require "glancer/workflow/prompt_builder" # Glancer::Workflow::PromptBuilder
-require "glancer/workflow/sql_extractor" # Glancer::Workflow::SqlExtractor
-require "glancer/workflow/sql_sanitizer" # Glancer::Workflow::SqlSanitizer
-require "glancer/workflow/sql_validator" # Glancer::Workflow::SqlValidator
+require "glancer/workflow/sql_extractor" # Glancer::Workflow::SQLExtractor
+require "glancer/workflow/sql_sanitizer" # Glancer::Workflow::SQLSanitizer
+require "glancer/workflow/sql_validator" # Glancer::Workflow::SQLValidator
 require "glancer/workflow/llm" # Glancer::Workflow::LLM
+require "glancer/workflow/ar_prompt_builder" # Glancer::Workflow::ARPromptBuilder
+require "glancer/workflow/ar_extractor" # Glancer::Workflow::ARExtractor
+require "glancer/workflow/ar_sanitizer" # Glancer::Workflow::ARSanitizer
+require "glancer/workflow/ar_executor" # Glancer::Workflow::ARExecutor
 
 require "glancer/chart_analyzer" # Glancer::ChartAnalyzer

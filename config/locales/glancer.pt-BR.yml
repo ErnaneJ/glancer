@@ -39,6 +39,7 @@ pt-BR:
       title: "Detalhes da mensagem"
       user_question: "Pergunta do usuário"
       current_sql: "SQL Atual"
+      current_code: "Código Gerado"
       user_edited: "Editado pelo usuário"
       sql_versions: "Versões SQL (%{count})"
       execution_history: "Histórico de Execução (%{count})"

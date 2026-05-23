@@ -36,11 +36,14 @@
             </div>
           <% end %>
 
-          <%# SQL atual %>
+          <%# Generated code (SQL or ActiveRecord) %>
           <% if message_info.sql.present? %>
+            <% code_is_sql = message_info.sql.strip.match?(/\A\s*(?:SELECT|WITH)\b/i) %>
+            <% code_lang   = code_is_sql ? "sql" : "ruby" %>
+            <% code_label  = code_is_sql ? t("glancer.info_panel.current_sql") : t("glancer.info_panel.current_code") %>
             <div>
               <div class="flex items-center justify-between mb-2">
-                <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= t("glancer.info_panel.current_sql") %></p>
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= code_label %></p>
                 <div class="flex items-center gap-2">
                   <% if message_info.user_edited_sql? %>
                     <span class="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded-full"><%= t("glancer.info_panel.user_edited") %></span>
@@ -54,7 +57,7 @@
                 </div>
               </div>
               <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                <pre class="!m-0 !rounded-none text-xs overflow-x-auto p-4"><code class="language-sql"><%= message_info.sql.strip %></code></pre>
+                <pre class="!m-0 !rounded-none text-xs overflow-x-auto p-4"><code class="language-<%= code_lang %>"><%= message_info.sql.strip %></code></pre>
               </div>
             </div>
           <% end %>
@@ -97,7 +100,8 @@
                       </div>
                     </summary>
                     <div class="overflow-x-auto">
-                      <pre class="!m-0 !rounded-none text-[11px] p-3"><code class="language-sql"><%= version.sql.strip %></code></pre>
+                      <% version_lang = version.sql.strip.match?(/\A\s*(?:SELECT|WITH)\b/i) ? "sql" : "ruby" %>
+                      <pre class="!m-0 !rounded-none text-[11px] p-3"><code class="language-<%= version_lang %>"><%= version.sql.strip %></code></pre>
                     </div>
                   </details>
                 <% end %>

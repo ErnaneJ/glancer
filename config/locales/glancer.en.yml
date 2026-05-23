@@ -39,6 +39,7 @@ en:
       title: "Message details"
       user_question: "User question"
       current_sql: "Current SQL"
+      current_code: "Generated Code"
       user_edited: "User edited"
       sql_versions: "SQL Versions (%{count})"
       execution_history: "Execution History (%{count})"

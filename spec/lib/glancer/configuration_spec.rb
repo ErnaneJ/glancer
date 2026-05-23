@@ -23,6 +23,10 @@ RSpec.describe Glancer::Configuration do
     it "defines EMBEDDING_DEFAULTS for each LLM provider" do
       expect(described_class::EMBEDDING_DEFAULTS.keys).to contain_exactly(:gemini, :openai, :openrouter)
     end
+
+    it "defines QUERY_MODES" do
+      expect(described_class::QUERY_MODES).to contain_exactly(:sql, :activerecord)
+    end
   end
 
   # ── Default values ────────────────────────────────────────────────────────────
@@ -106,6 +110,10 @@ RSpec.describe Glancer::Configuration do
 
     it "sets blazer_path to nil" do
       expect(config.blazer_path).to be_nil
+    end
+
+    it "sets query_mode to :sql" do
+      expect(config.query_mode).to eq(:sql)
     end
 
     it "sets context_file_path to a string" do
@@ -725,6 +733,29 @@ RSpec.describe Glancer::Configuration do
     it "returns false when ActiveRecord raises" do
       allow(ActiveRecord::Base).to receive(:connection).and_raise(StandardError)
       expect(described_class.valid_table_name?("anything")).to be(false)
+    end
+  end
+
+  # ── query_mode= ──────────────────────────────────────────────────────────────
+
+  describe "#query_mode=" do
+    it "accepts :sql" do
+      config.query_mode = :sql
+      expect(config.query_mode).to eq(:sql)
+    end
+
+    it "accepts :activerecord" do
+      config.query_mode = :activerecord
+      expect(config.query_mode).to eq(:activerecord)
+    end
+
+    it "raises ArgumentError for an invalid mode" do
+      expect { config.query_mode = :graphql }
+        .to raise_error(ArgumentError, /query_mode must be one of/)
+    end
+
+    it "raises ArgumentError for a String value" do
+      expect { config.query_mode = "sql" }.to raise_error(ArgumentError)
     end
   end
 end
