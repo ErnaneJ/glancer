@@ -110,18 +110,18 @@
 
             <%# SQL role %>
             <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
-              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — SQL generation</span>
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — code generation</span>
             </div>
             <div class="grid grid-cols-2 px-4 py-2.5 items-center">
-              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">sql_provider</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">code_provider</span>
               <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
-                <%= cfg.sql_provider || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_provider} (default)</span>).html_safe %>
+                <%= cfg.code_provider || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_provider} (default)</span>).html_safe %>
               </span>
             </div>
             <div class="grid grid-cols-2 px-4 py-2.5 items-center">
-              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">sql_model</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">code_model</span>
               <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
-                <%= cfg.sql_model || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_model} (default)</span>).html_safe %>
+                <%= cfg.code_model || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_model} (default)</span>).html_safe %>
               </span>
             </div>
 

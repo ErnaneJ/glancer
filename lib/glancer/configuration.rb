@@ -43,8 +43,8 @@ module Glancer
       self.statement_timeout = 30.seconds
       self.embedding_provider = nil  # nil → uses llm_provider
       self.embedding_model = nil     # nil → uses provider default
-      self.sql_provider = nil        # nil → uses llm_provider (for SQL generation)
-      self.sql_model = nil           # nil → uses llm_model (for SQL generation)
+      self.code_provider = nil        # nil → uses llm_provider (for SQL generation)
+      self.code_model = nil           # nil → uses llm_model (for SQL generation)
       self.chat_provider = nil       # nil → uses llm_provider (for humanized responses)
       self.chat_model = nil          # nil → uses llm_model (for humanized responses)
       self.blazer_path = nil         # nil → auto-detected if Blazer::Engine is mounted
@@ -60,7 +60,7 @@ module Glancer
                 :schema_documents_weight, :context_documents_weight, :models_documents_weight,
                 :chunk_size, :chunk_overlap, :history_limit, :statement_timeout,
                 :embedding_provider, :embedding_model,
-                :sql_provider, :sql_model,
+                :code_provider, :code_model,
                 :chat_provider, :chat_model,
                 :blazer_path, :query_mode
 
@@ -252,18 +252,18 @@ module Glancer
       embedding_model || EMBEDDING_DEFAULTS[resolved_embedding_provider] || "text-embedding-004"
     end
 
-    def sql_provider=(value)
+    def code_provider=(value)
       unless value.nil? || LLM_PROVIDERS.include?(value)
-        raise ArgumentError, "sql_provider must be nil or one of: #{LLM_PROVIDERS.join(", ")}"
+        raise ArgumentError, "code_provider must be nil or one of: #{LLM_PROVIDERS.join(", ")}"
       end
 
-      @sql_provider = value
+      @code_provider = value
     end
 
-    def sql_model=(value)
-      raise ArgumentError, "sql_model must be nil or a String" unless value.nil? || value.is_a?(String)
+    def code_model=(value)
+      raise ArgumentError, "code_model must be nil or a String" unless value.nil? || value.is_a?(String)
 
-      @sql_model = value
+      @code_model = value
     end
 
     def chat_provider=(value)
@@ -280,12 +280,12 @@ module Glancer
       @chat_model = value
     end
 
-    def resolved_sql_provider
-      sql_provider || llm_provider
+    def resolved_code_provider
+      code_provider || llm_provider
     end
 
-    def resolved_sql_model
-      sql_model || llm_model
+    def resolved_code_model
+      code_model || llm_model
     end
 
     def resolved_chat_provider

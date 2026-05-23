@@ -46,7 +46,7 @@ You ask a question. Glancer retrieves the relevant schema context, asks the LLM 
 
 Glancer supports two execution modes:
 
-- **SQL mode** (default) — the LLM generates a `SELECT` statement; executed via `exec_query` inside a rolled-back transaction.
+- **code generation mode** (default) — the LLM generates a `SELECT` statement; executed via `exec_query` inside a rolled-back transaction.
 - **ActiveRecord mode** — the LLM generates a Ruby expression using ActiveRecord query methods (`where`, `joins`, `count`, etc.); evaluated inside a rolled-back transaction with a write-method blocklist.
 
 <!-- Screenshot / demo GIF placeholder -->
@@ -149,7 +149,7 @@ end
 
 ### Query mode
 
-Choose between SQL generation (default) and ActiveRecord expression generation:
+Choose between code generation (default) and ActiveRecord expression generation:
 
 ```ruby
 Glancer.configure do |config|
@@ -159,7 +159,7 @@ Glancer.configure do |config|
 end
 ```
 
-ActiveRecord mode lets the LLM leverage model scopes, named associations, and Ruby idioms instead of raw SQL. It can be a better fit when your models already encapsulate business logic you want the LLM to reuse. SQL mode is more portable and works without any ActiveRecord models loaded.
+ActiveRecord mode lets the LLM leverage model scopes, named associations, and Ruby idioms instead of raw SQL. It can be a better fit when your models already encapsulate business logic you want the LLM to reuse. code generation mode is more portable and works without any ActiveRecord models loaded.
 
 ### Split providers per role
 
@@ -169,8 +169,8 @@ You can use different models for code generation, chat responses, and embeddings
 Glancer.configure do |config|
   config.llm_provider = :gemini               # fallback for any unspecified role
 
-  config.sql_provider = :openai               # code-focused model for query generation
-  config.sql_model    = "gpt-4o"
+  config.code_provider = :openai               # code-focused model for query generation
+  config.code_model    = "gpt-4o"
 
   config.chat_provider = :gemini              # cheaper model for humanized responses
   config.chat_model    = "gemini-2.0-flash"
@@ -190,7 +190,7 @@ end
 | `statement_timeout` | `30.seconds` | Max query execution time (enforced server-side on PG/MySQL) |
 | `llm_provider` | `:gemini` | Default LLM provider for all roles |
 | `llm_model` | `"gemini-2.0-flash"` | Default model |
-| `sql_provider` / `sql_model` | `nil` (inherits default) | Provider/model used for query generation |
+| `code_provider` / `code_model` | `nil` (inherits default) | Provider/model used for query generation |
 | `chat_provider` / `chat_model` | `nil` (inherits default) | Provider/model used for humanized responses |
 | `embedding_provider` / `embedding_model` | `nil` (inherits default) | Provider/model used for embeddings |
 | `gemini_api_key` | `nil` | Gemini API key |
@@ -250,7 +250,7 @@ Visit `/glancer` in your browser. The interface provides:
 - **Code editing** — click Edit to modify the generated code and re-run it. Edited versions show a badge.
 - **Results table** — with a one-click CSV export (client-side, no backend).
 - **Accordion panels** — results collapse when a new query runs; panels can be toggled.
-- **Blazer button** — opens the SQL query in Blazer pre-filled, if the gem is installed (SQL mode only).
+- **Blazer button** — opens the SQL query in Blazer pre-filled, if the gem is installed (code generation mode only).
 - **Audio input** — click the microphone button to dictate your question.
 - **Copy buttons** — copy the generated code or the full assistant response with one click.
 - **Custom instructions** — set persistent system-level instructions at `/glancer/settings`.
@@ -261,7 +261,7 @@ Visit `/glancer` in your browser. The interface provides:
 
 Glancer is designed to be safe to deploy on production databases.
 
-### SQL mode
+### code generation mode
 
 | Layer | Mechanism |
 |---|---|
@@ -276,13 +276,13 @@ Glancer is designed to be safe to deploy on production databases.
 
 | Layer | Mechanism |
 |---|---|
-| **No writes** | Same rolled-back transaction as SQL mode |
+| **No writes** | Same rolled-back transaction as code generation mode |
 | **Method blocklist** | `.destroy`, `.delete`, `.update`, `.save`, `.create`, `.insert`, `.upsert`, `.touch`, and variants are rejected before `eval` |
 | **Shell blocklist** | Backticks, `system()`, `exec()`, `spawn()` are rejected |
 | **Eval blocklist** | `eval`, `instance_eval`, `class_eval` are rejected |
 | **File write blocklist** | `FileUtils`, `File.write`, `IO.write` are rejected |
 | **Dynamic load blocklist** | `require`, `load`, `autoload` are rejected |
-| **Audit trail** | Same as SQL mode; `code_type: "activerecord"` recorded in `glancer_audits` |
+| **Audit trail** | Same as code generation mode; `code_type: "activerecord"` recorded in `glancer_audits` |
 
 ## Usage via Ruby classes
 
@@ -292,7 +292,7 @@ You can use Glancer's internals directly from the Rails console or your own code
 # Re-index everything
 Glancer::Indexer.rebuild_all!
 
-# Run the full pipeline for a question (SQL mode)
+# Run the full pipeline for a question (code generation mode)
 result = Glancer::Workflow.run(chat.id, "Which products have never been ordered?")
 # => { content: "...", code: "SELECT ...", code_type: "sql", successful: true, sources: [...] }
 

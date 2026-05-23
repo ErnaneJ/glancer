@@ -92,12 +92,12 @@ RSpec.describe Glancer::Configuration do
       expect(config.embedding_model).to be_nil
     end
 
-    it "sets sql_provider to nil" do
-      expect(config.sql_provider).to be_nil
+    it "sets code_provider to nil" do
+      expect(config.code_provider).to be_nil
     end
 
-    it "sets sql_model to nil" do
-      expect(config.sql_model).to be_nil
+    it "sets code_model to nil" do
+      expect(config.code_model).to be_nil
     end
 
     it "sets chat_provider to nil" do
@@ -512,37 +512,37 @@ RSpec.describe Glancer::Configuration do
     end
   end
 
-  # ── sql_provider= / sql_model= ───────────────────────────────────────────────
+  # ── code_provider= / code_model= ───────────────────────────────────────────────
 
-  describe "#sql_provider=" do
+  describe "#code_provider=" do
     it "accepts nil" do
-      config.sql_provider = nil
-      expect(config.sql_provider).to be_nil
+      config.code_provider = nil
+      expect(config.code_provider).to be_nil
     end
 
     it "accepts a valid LLM provider" do
-      config.sql_provider = :openai
-      expect(config.sql_provider).to eq(:openai)
+      config.code_provider = :openai
+      expect(config.code_provider).to eq(:openai)
     end
 
     it "raises ArgumentError for invalid provider" do
-      expect { config.sql_provider = :bad }.to raise_error(ArgumentError)
+      expect { config.code_provider = :bad }.to raise_error(ArgumentError)
     end
   end
 
-  describe "#sql_model=" do
+  describe "#code_model=" do
     it "accepts nil" do
-      config.sql_model = nil
-      expect(config.sql_model).to be_nil
+      config.code_model = nil
+      expect(config.code_model).to be_nil
     end
 
     it "accepts a String" do
-      config.sql_model = "gpt-4o"
-      expect(config.sql_model).to eq("gpt-4o")
+      config.code_model = "gpt-4o"
+      expect(config.code_model).to eq("gpt-4o")
     end
 
     it "raises ArgumentError for non-String / non-nil" do
-      expect { config.sql_model = 1 }.to raise_error(ArgumentError)
+      expect { config.code_model = 1 }.to raise_error(ArgumentError)
     end
   end
 
@@ -630,29 +630,29 @@ RSpec.describe Glancer::Configuration do
     end
   end
 
-  describe "#resolved_sql_provider" do
-    it "falls back to llm_provider when sql_provider is nil" do
-      config.sql_provider = nil
+  describe "#resolved_code_provider" do
+    it "falls back to llm_provider when code_provider is nil" do
+      config.code_provider = nil
       config.llm_provider = :openai
-      expect(config.resolved_sql_provider).to eq(:openai)
+      expect(config.resolved_code_provider).to eq(:openai)
     end
 
-    it "returns sql_provider when set" do
-      config.sql_provider = :openrouter
-      expect(config.resolved_sql_provider).to eq(:openrouter)
+    it "returns code_provider when set" do
+      config.code_provider = :openrouter
+      expect(config.resolved_code_provider).to eq(:openrouter)
     end
   end
 
-  describe "#resolved_sql_model" do
-    it "falls back to llm_model when sql_model is nil" do
-      config.sql_model = nil
+  describe "#resolved_code_model" do
+    it "falls back to llm_model when code_model is nil" do
+      config.code_model = nil
       config.llm_model = "base-model"
-      expect(config.resolved_sql_model).to eq("base-model")
+      expect(config.resolved_code_model).to eq("base-model")
     end
 
-    it "returns sql_model when set" do
-      config.sql_model = "sql-specialist"
-      expect(config.resolved_sql_model).to eq("sql-specialist")
+    it "returns code_model when set" do
+      config.code_model = "sql-specialist"
+      expect(config.resolved_code_model).to eq("sql-specialist")
     end
   end
 

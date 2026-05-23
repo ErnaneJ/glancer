@@ -38,7 +38,7 @@ module Glancer
     end
 
     def self.run_sql(question, embeddings, history)
-      Glancer::Utils::Logger.info("Workflow", "Running SQL mode...")
+      Glancer::Utils::Logger.info("Workflow", "Running SQL code generation mode...")
 
       sql = Workflow::Builder.build_sql(question, embeddings, history: history)
       Glancer::Utils::Logger.debug("Workflow", "Generated raw SQL:\n#{sql}")

@@ -54,10 +54,10 @@ Glancer.configure do |config|
   # Useful when you want a code-focused model (e.g. gpt-4o) for query generation
   # and a cheaper model for responses.
   # Accepted: nil | :gemini | :openai | :openrouter
-  config.sql_provider = nil
+  config.code_provider = nil
 
   # Model used for code generation. Nil → falls back to llm_model.
-  config.sql_model = nil
+  config.code_model = nil
 
   # ─────────────────────────────────────────────────────────────────────────────
   # LLM — Chat responses (overrides default for humanized answers)
@@ -107,8 +107,8 @@ Glancer.configure do |config|
   # ─── Example: different providers per role ──────────────────────────────────
   # config.llm_provider       = :gemini                              # default fallback
   # config.llm_model          = "gemini-2.0-flash"
-  # config.sql_provider       = :openai                              # code-focused model for queries
-  # config.sql_model          = "gpt-4o"
+  # config.code_provider       = :openai                              # code-focused model for queries
+  # config.code_model          = "gpt-4o"
   # config.chat_provider      = :gemini                              # cheaper for chat
   # config.chat_model         = "gemini-2.0-flash"
   # config.embedding_provider = :gemini                              # dedicated embeddings
@@ -121,7 +121,7 @@ Glancer.configure do |config|
   # config.llm_provider       = :openrouter
   # config.openrouter_api_key = ENV.fetch("OPENROUTER_API_KEY", nil)
   # config.llm_model          = "anthropic/claude-3.5-sonnet"
-  # config.sql_model          = "deepseek/deepseek-r1:free"
+  # config.code_model          = "deepseek/deepseek-r1:free"
   # config.embedding_provider = :gemini
   # config.gemini_api_key     = ENV.fetch("GEMINI_API_KEY", nil)
   # config.embedding_model    = "text-embedding-004"

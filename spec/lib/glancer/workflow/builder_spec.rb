@@ -28,8 +28,8 @@ RSpec.describe Glancer::Workflow::Builder do
 
     it "calls RubyLLM.chat with the configured provider and model" do
       expect(RubyLLM).to receive(:chat).with(
-        hash_including(provider: Glancer.configuration.resolved_sql_provider,
-                       model: Glancer.configuration.resolved_sql_model)
+        hash_including(provider: Glancer.configuration.resolved_code_provider,
+                       model: Glancer.configuration.resolved_code_model)
       ).and_return(fake_chat)
       described_class.build_sql(question, embeddings)
     end
@@ -44,7 +44,7 @@ RSpec.describe Glancer::Workflow::Builder do
     it "raises Glancer::Error when the LLM call fails" do
       allow(RubyLLM).to receive(:chat).and_raise(StandardError, "network error")
       expect { described_class.build_sql(question, embeddings) }
-        .to raise_error(Glancer::Error, /SQL generation failed/)
+        .to raise_error(Glancer::Error, /code generation failed/)
     end
 
     it "includes recent audit examples as few-shot examples" do
@@ -141,7 +141,7 @@ RSpec.describe Glancer::Workflow::Builder do
     it "raises Glancer::Error when the LLM call fails" do
       allow(RubyLLM).to receive(:chat).and_raise(StandardError, "LLM down")
       expect { described_class.fix_sql(failed_sql, error_message) }
-        .to raise_error(Glancer::Error, /SQL correction workflow failed/)
+        .to raise_error(Glancer::Error, /code correction workflow failed/)
     end
   end
 end

@@ -12,8 +12,8 @@ module Glancer
         Glancer::Utils::Logger.debug("Workflow::Builder", "Generated prompt for SQL generation:\n#{prompt}")
 
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.resolved_sql_provider,
-          model: Glancer.configuration.resolved_sql_model,
+          provider: Glancer.configuration.resolved_code_provider,
+          model: Glancer.configuration.resolved_code_model,
           assume_model_exists: true
         )
 
@@ -26,7 +26,7 @@ module Glancer
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::Builder", "Failed to generate SQL: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Workflow::Builder", "Backtrace:\n#{e.backtrace.join("\n")}")
-        raise Glancer::Error, "SQL generation failed: #{e.message}"
+        raise Glancer::Error, "code generation failed: #{e.message}"
       end
 
       def self.recent_examples
@@ -59,8 +59,8 @@ module Glancer
         PROMPT
 
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.resolved_sql_provider,
-          model: Glancer.configuration.resolved_sql_model,
+          provider: Glancer.configuration.resolved_code_provider,
+          model: Glancer.configuration.resolved_code_model,
           assume_model_exists: true
         )
 
@@ -70,7 +70,7 @@ module Glancer
         Glancer::Workflow::SQLExtractor.extract(response.content)
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::Builder", "Failed to fix SQL: #{e.message}")
-        raise Glancer::Error, "SQL correction workflow failed: #{e.message}"
+        raise Glancer::Error, "code correction workflow failed: #{e.message}"
       end
 
       def self.build_ar_code(question, embeddings, history: [])
@@ -79,8 +79,8 @@ module Glancer
         prompt = Glancer::Workflow::ARPromptBuilder.call(question, embeddings, history: history)
 
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.resolved_sql_provider,
-          model: Glancer.configuration.resolved_sql_model,
+          provider: Glancer.configuration.resolved_code_provider,
+          model: Glancer.configuration.resolved_code_model,
           assume_model_exists: true
         )
 
@@ -113,8 +113,8 @@ module Glancer
         PROMPT
 
         chat = RubyLLM.chat(
-          provider: Glancer.configuration.resolved_sql_provider,
-          model: Glancer.configuration.resolved_sql_model,
+          provider: Glancer.configuration.resolved_code_provider,
+          model: Glancer.configuration.resolved_code_model,
           assume_model_exists: true
         )
 
