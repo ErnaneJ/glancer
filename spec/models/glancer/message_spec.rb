@@ -76,22 +76,22 @@ RSpec.describe Glancer::Message do
       expect(msg.user_message).to be_nil
     end
 
-    it "has many sql_versions" do
-      msg = described_class.create!(chat: chat, role: "assistant", content: "result", sql: "SELECT 1")
-      version = Glancer::SqlVersion.create!(message: msg, sql: "SELECT 1", source: "generated")
-      expect(msg.sql_versions).to include(version)
+    it "has many code_versions" do
+      msg = described_class.create!(chat: chat, role: "assistant", content: "result", code: "SELECT 1")
+      version = Glancer::CodeVersion.create!(message: msg, code: "SELECT 1", source: "generated")
+      expect(msg.code_versions).to include(version)
     end
 
-    it "destroys sql_versions when the message is destroyed" do
-      msg = described_class.create!(chat: chat, role: "assistant", content: "result", sql: "SELECT 1")
-      Glancer::SqlVersion.create!(message: msg, sql: "SELECT 1", source: "generated")
-      expect { msg.destroy }.to change(Glancer::SqlVersion, :count).by(-1)
+    it "destroys code_versions when the message is destroyed" do
+      msg = described_class.create!(chat: chat, role: "assistant", content: "result", code: "SELECT 1")
+      Glancer::CodeVersion.create!(message: msg, code: "SELECT 1", source: "generated")
+      expect { msg.destroy }.to change(Glancer::CodeVersion, :count).by(-1)
     end
 
     it "nullifies audits when the message is destroyed" do
-      msg = described_class.create!(chat: chat, role: "assistant", content: "result", sql: "SELECT 1")
+      msg = described_class.create!(chat: chat, role: "assistant", content: "result", code: "SELECT 1")
       audit = Glancer::Audit.create!(
-        sql: "SELECT 1",
+        code: "SELECT 1",
         adapter: "sqlite",
         run_id: SecureRandom.uuid,
         executed_at: Time.current,

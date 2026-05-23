@@ -7,6 +7,9 @@ class CreateGlancerMessages < ActiveRecord::Migration[6.1]
     if table_exists?(:glancer_sql_versions) && foreign_key_exists?(:glancer_sql_versions, :glancer_messages)
       remove_foreign_key :glancer_sql_versions, :glancer_messages
     end
+    if table_exists?(:glancer_code_versions) && foreign_key_exists?(:glancer_code_versions, :glancer_messages)
+      remove_foreign_key :glancer_code_versions, :glancer_messages
+    end
 
     drop_table :glancer_messages, if_exists: true
 
@@ -15,9 +18,10 @@ class CreateGlancerMessages < ActiveRecord::Migration[6.1]
       t.references :user_message, null: true, foreign_key: { to_table: :glancer_messages }
       t.string :role
       t.text :content
-      t.text :sql
+      t.text :code
+      t.string :code_type, null: false, default: "sql"
       t.boolean :successful, default: true
-      t.boolean :user_edited_sql, default: false, null: false
+      t.boolean :user_edited_code, default: false, null: false
       t.string :llm_model
       t.timestamps
     end

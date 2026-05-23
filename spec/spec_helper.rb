@@ -110,7 +110,7 @@ RSpec.configure do |config|
 
   config.before do
     # Clean DB between tests (order matters: child tables first).
-    [Glancer::SqlVersion, Glancer::Audit, Glancer::Embedding,
+    [Glancer::CodeVersion, Glancer::Audit, Glancer::Embedding,
      Glancer::Message, Glancer::Chat, Glancer::Setting].each(&:delete_all)
 
     # Clear the in-memory workflow cache.

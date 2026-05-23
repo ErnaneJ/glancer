@@ -4,7 +4,8 @@ class CreateGlancerAudits < ActiveRecord::Migration[6.1]
   def change
     create_table :glancer_audits do |t|
       t.text :question
-      t.text :sql, null: false
+      t.text :code, null: false
+      t.string :code_type, null: false, default: "sql"
       t.string :adapter, null: false
       t.string :run_id, null: false
       t.datetime :executed_at, null: false

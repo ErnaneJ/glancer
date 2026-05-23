@@ -67,9 +67,9 @@ RSpec.describe Glancer::Workflow::ARExecutor do
         .to change(Glancer::Audit, :count).by(1)
     end
 
-    it "stores the Ruby expression in the audit sql column" do
+    it "stores the Ruby expression in the audit code column" do
       described_class.execute(safe_code)
-      expect(Glancer::Audit.last.sql).to eq(safe_code)
+      expect(Glancer::Audit.last.code).to eq(safe_code)
     end
 
     it "stores the run_id in the audit record" do
@@ -115,7 +115,7 @@ RSpec.describe Glancer::Workflow::ARExecutor do
       expect(result).to be_a(Hash)
       expect(result[:error]).to be(true)
       expect(result[:message]).to be_a(String)
-      expect(result[:last_sql]).to eq(bad_code)
+      expect(result[:last_code]).to eq(bad_code)
     end
   end
 end

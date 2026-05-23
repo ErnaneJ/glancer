@@ -4,7 +4,7 @@ require "spec_helper"
 
 RSpec.describe Glancer::Workflow::Cache do
   let(:question) { "How many users are there?" }
-  let(:result)   { { question: question, content: "42 users", sql: "SELECT COUNT(*) FROM users", successful: true } }
+  let(:result)   { { question: question, content: "42 users", code: "SELECT COUNT(*) FROM users", successful: true } }
 
   before { described_class.clear }
 
@@ -58,7 +58,7 @@ RSpec.describe Glancer::Workflow::Cache do
       entry = described_class.fetch(question)
       expect(entry).not_to be_nil
       expect(entry[:cached_at]).to be_a(Time)
-      expect(entry[:sql]).to eq("SELECT COUNT(*) FROM users")
+      expect(entry[:code]).to eq("SELECT COUNT(*) FROM users")
     end
 
     it "overwrites an existing entry for the same question" do

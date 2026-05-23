@@ -11,9 +11,10 @@ ActiveRecord::Schema.define do
     t.integer :user_message_id
     t.string  :role
     t.text    :content
-    t.text    :sql
+    t.text    :code
+    t.string  :code_type,        null: false, default: "sql"
     t.boolean :successful,       default: true
-    t.boolean :user_edited_sql,  default: false, null: false
+    t.boolean :user_edited_code, default: false, null: false
     t.string  :llm_model
     t.timestamps
   end
@@ -28,7 +29,8 @@ ActiveRecord::Schema.define do
 
   create_table :glancer_audits, force: :cascade do |t|
     t.text     :question
-    t.text     :sql,         null: false
+    t.text     :code,        null: false
+    t.string   :code_type,   null: false, default: "sql"
     t.string   :adapter,     null: false
     t.string   :run_id,      null: false
     t.datetime :executed_at, null: false
@@ -36,9 +38,9 @@ ActiveRecord::Schema.define do
     t.timestamps
   end
 
-  create_table :glancer_sql_versions, force: :cascade do |t|
+  create_table :glancer_code_versions, force: :cascade do |t|
     t.integer :message_id, null: false
-    t.text    :sql,        null: false
+    t.text    :code,       null: false
     t.string  :source,     null: false, default: "generated"
     t.timestamps
   end

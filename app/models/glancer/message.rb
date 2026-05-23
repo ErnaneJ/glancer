@@ -4,7 +4,7 @@ module Glancer
   class Message < ApplicationRecord
     belongs_to :chat, class_name: "Glancer::Chat"
     belongs_to :user_message, class_name: "Glancer::Message", optional: true
-    has_many :sql_versions, class_name: "Glancer::SqlVersion", dependent: :destroy
+    has_many :code_versions, class_name: "Glancer::CodeVersion", dependent: :destroy
     has_many :audits, class_name: "Glancer::Audit", foreign_key: :message_id, dependent: :nullify
 
     # Nullify self-referential FK before destroy to avoid MySQL constraint violation

@@ -48,13 +48,14 @@ module Glancer
       @response_message = @chat.messages.create!(
         role: :assistant,
         content: response[:content],
-        sql: response[:sql],
+        code: response[:code],
+        code_type: response[:code_type] || "sql",
         user_message: @message,
         successful: response[:successful]
       )
-      return unless @response_message.sql.present?
+      return unless @response_message.code.present?
 
-      @response_message.sql_versions.create!(sql: @response_message.sql, source: :generated)
+      @response_message.code_versions.create!(code: @response_message.code, source: :generated)
     end
   end
 end

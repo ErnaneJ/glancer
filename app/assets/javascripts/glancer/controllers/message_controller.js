@@ -213,15 +213,15 @@ export default class extends Controller {
     const editorWrapper = document.getElementById(`sql-editor-wrapper-${messageId}`);
     const editorEl = document.getElementById(`sql-editor-${messageId}`);
     const isEditing = editorWrapper && !editorWrapper.classList.contains("hidden");
-    const customSql = isEditing ? editorEl?.value?.trim() : null;
+    const customCode = isEditing ? editorEl?.value?.trim() : null;
 
     try {
       const body = new FormData();
-      if (customSql) body.append("custom_sql", customSql);
+      if (customCode) body.append("custom_code", customCode);
 
-      const response = await fetch(`/glancer/messages/${messageId}/run_sql`, {
+      const response = await fetch(`/glancer/messages/${messageId}/run_code`, {
         method: "POST",
-        body: customSql ? body : undefined,
+        body: customCode ? body : undefined,
         headers: {
           "Accept": "text/vnd.turbo-stream.html",
           "X-CSRF-Token": this.csrfToken,
@@ -231,17 +231,17 @@ export default class extends Controller {
       const html = await response.text();
       Turbo.renderStreamMessage(html);
 
-      // Update SQL code display with the saved SQL
-      if (isEditing && customSql) {
+      // Update code display with the saved code
+      if (isEditing && customCode) {
         const codeEl = document.getElementById(`sql-code-${messageId}`);
         if (codeEl) {
-          codeEl.textContent = customSql;
+          codeEl.textContent = customCode;
           if (window.Prism) Prism.highlightElement(codeEl);
         }
-        // Update the copy SQL button's data-sql attribute
+        // Update the copy button's data-sql attribute
         const scope = btn.closest("[data-controller='message']");
         const copyBtn = scope?.querySelector("[data-action='click->message#copySql']");
-        if (copyBtn) copyBtn.dataset.sql = customSql;
+        if (copyBtn) copyBtn.dataset.sql = customCode;
       }
 
       // Exit edit mode and reset button text

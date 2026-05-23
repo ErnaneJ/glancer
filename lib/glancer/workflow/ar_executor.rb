@@ -19,7 +19,8 @@ module Glancer
 
           Glancer::Audit.create!(
             question: original_question,
-            sql: code,
+            code: code,
+            code_type: "activerecord",
             adapter: Glancer.configuration.resolved_adapter,
             run_id: run_id,
             executed_at: Time.current,
@@ -31,7 +32,7 @@ module Glancer
           if attempt >= 3
             Glancer::Utils::Logger.error("Workflow::ARExecutor",
                                          "Final failure after #{attempt} attempts: #{e.message}")
-            return { error: true, message: e.message, last_sql: code }
+            return { error: true, message: e.message, last_code: code }
           end
 
           Glancer::Utils::Logger.warn("Workflow::ARExecutor",

@@ -41,7 +41,7 @@ en:
       current_sql: "Current SQL"
       current_code: "Generated Code"
       user_edited: "User edited"
-      sql_versions: "SQL Versions (%{count})"
+      code_versions: "Code Versions (%{count})"
       execution_history: "Execution History (%{count})"
       status: "Status"
       created_at: "Created"

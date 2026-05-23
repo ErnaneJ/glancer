@@ -41,7 +41,7 @@ es:
       current_sql: "SQL actual"
       current_code: "Código generado"
       user_edited: "Editado por usuario"
-      sql_versions: "Versiones SQL (%{count})"
+      code_versions: "Versiones de Código (%{count})"
       execution_history: "Historial de ejecución (%{count})"
       status: "Estado"
       created_at: "Creado"

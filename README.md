@@ -15,7 +15,7 @@
   <a href="https://github.com/ErnaneJ/glancer">
     <img src="https://github.com/ErnaneJ/glancer/raw/refs/heads/badge-generator/.github/badges/coverage.svg" alt="Coverage">
   </a>
-  <!-- Gem version — add once published to RubyGems -->
+  <!-- Gem version -->
   <a href="https://rubygems.org/gems/glancer">
     <img src="https://badge.fury.io/rb/glancer.svg" alt="Gem Version">
   </a>
@@ -25,7 +25,7 @@
   </a>
   <!-- Ruby -->
   <a href="https://www.ruby-lang.org/en/">
-    <img src="https://img.shields.io/badge/ruby-%3E%3D%203.1-CC342D" alt="Ruby >= 3.1">
+    <img src="https://img.shields.io/badge/ruby-%3E%3D%203.3-CC342D" alt="Ruby >= 3.3">
   </a>
   <!-- Rails -->
   <a href="https://rubyonrails.org/">
@@ -37,15 +37,19 @@
 
 Glancer is a **Ruby on Rails engine** that mounts a full-featured chat interface inside your app and lets anyone on your team query the database in plain language — no SQL knowledge required.
 
-You ask a question. Glancer retrieves the relevant schema context, asks the LLM to write a `SELECT` statement, validates and executes it safely, then returns the results alongside a human-readable explanation.
+You ask a question. Glancer retrieves the relevant schema context, asks the LLM to generate a query, validates and executes it safely, then returns the results alongside a human-readable explanation.
 
 ```
 "How many orders were placed in the last 30 days, grouped by status?"
-→ SQL generated, executed, and explained automatically.
+→ Query generated, executed, and explained automatically.
 ```
 
+Glancer supports two execution modes:
+
+- **SQL mode** (default) — the LLM generates a `SELECT` statement; executed via `exec_query` inside a rolled-back transaction.
+- **ActiveRecord mode** — the LLM generates a Ruby expression using ActiveRecord query methods (`where`, `joins`, `count`, etc.); evaluated inside a rolled-back transaction with a write-method blocklist.
+
 <!-- Screenshot / demo GIF placeholder -->
-<!-- Add a screenshot of the chat UI here -->
 <p align="center">
   <img src="./.github/assets/chat-print.png" alt="Glancer demo" width="100%">
 </p>
@@ -54,7 +58,7 @@ You ask a question. Glancer retrieves the relevant schema context, asks the LLM 
 
 Every Rails app accumulates tables and columns whose meaning lives in the heads of a few engineers. Product managers open tickets to ask simple questions. Data analysts copy-paste schemas into ChatGPT. Engineers spend time writing one-off queries for stakeholders.
 
-Glancer removes that friction. It gives your app a persistent, context-aware SQL assistant that understands your domain — not just generic SQL — because you teach it your schema, your models, and your business rules through a plain Markdown file.
+Glancer removes that friction. It gives your app a persistent, context-aware database assistant that understands your domain — not just generic SQL — because you teach it your schema, your models, and your business rules through a plain Markdown file.
 
 Key design decisions:
 
@@ -65,7 +69,7 @@ Key design decisions:
 
 ## How?
 
-Glancer implements a **RAG (Retrieval-Augmented Generation)** pipeline. 
+Glancer implements a **RAG (Retrieval-Augmented Generation)** pipeline.
 
 ![Glancer Flow](./.github/assets/glancer-flow-bg.svg)
 
@@ -74,15 +78,15 @@ Glancer implements a **RAG (Retrieval-Augmented Generation)** pipeline.
 | Table | Purpose |
 |---|---|
 | `glancer_chats` | Conversation containers |
-| `glancer_messages` | User / assistant turns; stores generated SQL and execution state |
+| `glancer_messages` | User/assistant turns; stores generated `code` (SQL or Ruby), `code_type`, and execution state |
 | `glancer_embeddings` | Vector store: content, embedding (JSONB on PG / JSON elsewhere), source type and path |
-| `glancer_audits` | Immutable query log with unique `run_id` per execution |
+| `glancer_audits` | Immutable query log with `code`, `code_type`, and unique `run_id` per execution |
+| `glancer_code_versions` | Code edit history per message (tracks both SQL and ActiveRecord edits) |
 | `glancer_settings` | Runtime configuration (e.g. custom instructions) |
-| `glancer_sql_versions` | SQL edit history per message |
 
 ## Requirements
 
-- Ruby ≥ 3.1
+- Ruby ≥ 3.3
 - Rails ≥ 7.0
 - An API key for **Gemini**, **OpenAI**, or **OpenRouter**
 - SQLite, PostgreSQL, or MySQL/MariaDB
@@ -125,7 +129,7 @@ rails glancer:index:all
 
 ### 5. Visit the interface
 
-```bash
+```
 http://localhost:3000/glancer
 ```
 
@@ -143,15 +147,29 @@ Glancer.configure do |config|
 end
 ```
 
+### Query mode
+
+Choose between SQL generation (default) and ActiveRecord expression generation:
+
+```ruby
+Glancer.configure do |config|
+  # :sql (default) — LLM generates a SELECT statement
+  # :activerecord  — LLM generates a Ruby/ActiveRecord expression
+  config.query_mode = :activerecord
+end
+```
+
+ActiveRecord mode lets the LLM leverage model scopes, named associations, and Ruby idioms instead of raw SQL. It can be a better fit when your models already encapsulate business logic you want the LLM to reuse. SQL mode is more portable and works without any ActiveRecord models loaded.
+
 ### Split providers per role
 
-You can use different models for SQL generation, chat responses, and embeddings:
+You can use different models for code generation, chat responses, and embeddings:
 
 ```ruby
 Glancer.configure do |config|
   config.llm_provider = :gemini               # fallback for any unspecified role
 
-  config.sql_provider = :openai               # code-focused model for SQL generation
+  config.sql_provider = :openai               # code-focused model for query generation
   config.sql_model    = "gpt-4o"
 
   config.chat_provider = :gemini              # cheaper model for humanized responses
@@ -167,11 +185,12 @@ end
 | Option | Default | Description |
 |---|---|---|
 | `adapter` | auto-detected | `:postgres`, `:mysql`, `:mysql2`, or `:sqlite` |
+| `query_mode` | `:sql` | `:sql` (raw SELECT) or `:activerecord` (Ruby expression) |
 | `read_only_db` | `nil` | Replica connection URL; queries run against it when set |
 | `statement_timeout` | `30.seconds` | Max query execution time (enforced server-side on PG/MySQL) |
 | `llm_provider` | `:gemini` | Default LLM provider for all roles |
 | `llm_model` | `"gemini-2.0-flash"` | Default model |
-| `sql_provider` / `sql_model` | `nil` (inherits default) | Provider/model used for SQL generation |
+| `sql_provider` / `sql_model` | `nil` (inherits default) | Provider/model used for query generation |
 | `chat_provider` / `chat_model` | `nil` (inherits default) | Provider/model used for humanized responses |
 | `embedding_provider` / `embedding_model` | `nil` (inherits default) | Provider/model used for embeddings |
 | `gemini_api_key` | `nil` | Gemini API key |
@@ -188,7 +207,7 @@ end
 | `context_documents_weight` | `1.2` | Retrieval score boost for context chunks |
 | `models_documents_weight` | `1.1` | Retrieval score boost for model chunks |
 | `history_limit` | `6` | Prior turns included in the LLM prompt |
-| `workflow_cache_ttl` | `1.minute` | In-memory result cache TTL; `0` to disable |
+| `workflow_cache_ttl` | `5.minutes` | In-memory result cache TTL; `0` to disable |
 | `log_verbosity` | `:info` | `:silent`, `:none`, `:info`, or `:debug` |
 | `log_output_path` | `nil` | Log file path; `nil` writes to stdout |
 | `blazer_path` | `nil` (auto) | Blazer base path; auto-detected when `blazer` gem is present |
@@ -222,28 +241,27 @@ Add `--glancer-ignore` as the **first line** of the file to skip it during index
 
 ## Chat Interface
 
-<!-- Screenshot placeholder -->
-<!-- <p align="center">
-  <img src="./.github/assets/chat-ui.png" alt="Glancer chat UI" width="80%">
-</p> -->
-
 Visit `/glancer` in your browser. The interface provides:
 
 - **Multi-language support** — ask in any language; the LLM responds in the same language.
+- **Dual query modes** — SQL or ActiveRecord, controlled by `config.query_mode`. The generated code is syntax-highlighted in the message (SQL or Ruby, auto-detected).
 - **Pipeline status** — animated step labels show what the engine is doing while it works.
-- **Generated SQL** — syntax-highlighted, copyable, and editable before execution.
-- **SQL editing** — click Edit to modify the generated query and re-run it. Edited queries show a badge.
-- **Results table** — sortable, with a one-click CSV export (client-side, no backend).
+- **Generated code** — syntax-highlighted (SQL or Ruby), copyable, and editable before execution.
+- **Code editing** — click Edit to modify the generated code and re-run it. Edited versions show a badge.
+- **Results table** — with a one-click CSV export (client-side, no backend).
 - **Accordion panels** — results collapse when a new query runs; panels can be toggled.
-- **Blazer button** — opens the query in Blazer pre-filled, if the gem is installed.
+- **Blazer button** — opens the SQL query in Blazer pre-filled, if the gem is installed (SQL mode only).
 - **Audio input** — click the microphone button to dictate your question.
-- **Copy buttons** — copy the SQL or the full assistant response with one click.
+- **Copy buttons** — copy the generated code or the full assistant response with one click.
 - **Custom instructions** — set persistent system-level instructions at `/glancer/settings`.
 - **Schema viewer** — browse indexed tables and columns at `/glancer/db-schema`.
+- **Message details panel** — shows generated code, edit history, execution audit trail, and status.
 
 ## Safety
 
 Glancer is designed to be safe to deploy on production databases.
+
+### SQL mode
 
 | Layer | Mechanism |
 |---|---|
@@ -251,8 +269,20 @@ Glancer is designed to be safe to deploy on production databases.
 | **Keyword blocklist** | `DELETE`, `UPDATE`, `INSERT`, `DROP`, `TRUNCATE`, `ALTER`, `CREATE`, `REPLACE` are rejected before execution |
 | **Table validation** | Referenced tables are checked against the indexed schema; unknown tables return a friendly error |
 | **Statement timeout** | `statement_timeout` (PG) / `max_execution_time` (MySQL) kills runaway queries server-side |
-| **Audit trail** | Every attempt is recorded in `glancer_audits` with a `run_id` UUID injected as a SQL comment |
+| **Audit trail** | Every attempt is recorded in `glancer_audits` with a unique `run_id` UUID |
 | **Replica support** | Route queries to a read-only replica via `config.read_only_db` |
+
+### ActiveRecord mode
+
+| Layer | Mechanism |
+|---|---|
+| **No writes** | Same rolled-back transaction as SQL mode |
+| **Method blocklist** | `.destroy`, `.delete`, `.update`, `.save`, `.create`, `.insert`, `.upsert`, `.touch`, and variants are rejected before `eval` |
+| **Shell blocklist** | Backticks, `system()`, `exec()`, `spawn()` are rejected |
+| **Eval blocklist** | `eval`, `instance_eval`, `class_eval` are rejected |
+| **File write blocklist** | `FileUtils`, `File.write`, `IO.write` are rejected |
+| **Dynamic load blocklist** | `require`, `load`, `autoload` are rejected |
+| **Audit trail** | Same as SQL mode; `code_type: "activerecord"` recorded in `glancer_audits` |
 
 ## Usage via Ruby classes
 
@@ -262,18 +292,23 @@ You can use Glancer's internals directly from the Rails console or your own code
 # Re-index everything
 Glancer::Indexer.rebuild_all!
 
-# Run the full pipeline for a question
-result = Glancer::Workflow.run(
-  chat_id:  chat.id,
-  question: "Which products have never been ordered?",
-)
-# => { content: "...", sql: "SELECT ...", successful: true }
+# Run the full pipeline for a question (SQL mode)
+result = Glancer::Workflow.run(chat.id, "Which products have never been ordered?")
+# => { content: "...", code: "SELECT ...", code_type: "sql", successful: true, sources: [...] }
 
-# Retrieve relevant chunks for a question (without generating SQL)
-chunks = Glancer::Retriever.retrieve("monthly revenue by region")
+# Run the full pipeline in ActiveRecord mode
+Glancer.configure { |c| c.query_mode = :activerecord }
+result = Glancer::Workflow.run(chat.id, "How many active users joined this month?")
+# => { content: "...", code: "User.where(...).count", code_type: "activerecord", successful: true }
 
-# Check a specific SQL against the safety layer
+# Retrieve relevant chunks for a question (without generating code)
+chunks = Glancer::Retriever.search("monthly revenue by region")
+
+# Check SQL against the safety layer
 Glancer::Workflow::SQLSanitizer.ensure_safe!("SELECT * FROM users")
+
+# Check an ActiveRecord expression against the safety layer
+Glancer::Workflow::ARSanitizer.ensure_safe!("User.where(active: true).count")
 
 # Validate table references against the indexed schema
 Glancer::Workflow::SQLValidator.validate_tables_exist!("SELECT * FROM orders")
@@ -284,15 +319,15 @@ Glancer::Workflow::SQLValidator.validate_tables_exist!("SELECT * FROM orders")
 The engine mounts the following routes under the prefix configured in your `routes.rb` (default `/glancer`):
 
 ```
-GET  /glancer                      → chats#index
-GET  /glancer/chats/:id            → chats#show
-POST /glancer/chats                → chats#create
-DEL  /glancer/chats/:id            → chats#destroy
-POST /glancer/chats/:id/messages   → messages#create
-GET  /glancer/messages/:id/info    → messages#info (SQL + sources panel)
-POST /glancer/messages/:id/run_sql → messages#run_sql (re-execute saved SQL)
-GET  /glancer/db-schema            → db_schema#show
-GET  /glancer/settings             → settings#show
+GET  /glancer                       → chats#index
+GET  /glancer/chats/:id             → chats#show
+POST /glancer/chats                 → chats#create
+DEL  /glancer/chats/:id             → chats#destroy
+POST /glancer/chats/:id/messages    → messages#create
+GET  /glancer/messages/:id/info     → messages#message_info (code + sources panel)
+POST /glancer/messages/:id/run_code → messages#run_code (re-execute or edit and re-run saved code)
+GET  /glancer/db-schema             → schema#show
+GET  /glancer/settings              → settings#show
 ```
 
 ## Development

@@ -56,7 +56,8 @@ module Glancer
         return {
           question: question,
           content: explanation,
-          sql: sql,
+          code: sql,
+          code_type: "sql",
           successful: false
         }
       end
@@ -64,11 +65,12 @@ module Glancer
       raw_data = Workflow::Executor.execute(sql, original_question: question)
 
       if raw_data.is_a?(Hash) && raw_data[:error]
-        explanation = Glancer::Workflow::LLM.explain_error(question, raw_data[:message], raw_data[:last_sql])
+        explanation = Glancer::Workflow::LLM.explain_error(question, raw_data[:message], raw_data[:last_code])
         return {
           question: question,
           content: explanation,
-          sql: raw_data[:last_sql],
+          code: raw_data[:last_code],
+          code_type: "sql",
           successful: false
         }
       end
@@ -76,7 +78,8 @@ module Glancer
       {
         question: question,
         content: Glancer::Workflow::LLM.humanized_response(question, raw_data, sql),
-        sql: sql,
+        code: sql,
+        code_type: "sql",
         successful: true,
         sources: embeddings.map { |e| { id: e.id, type: e.source_type, path: e.source_path, score: e.score } }
       }
@@ -98,12 +101,13 @@ module Glancer
 
       if raw_data.is_a?(Hash) && raw_data[:error]
         explanation = Glancer::Workflow::LLM.explain_error(
-          question, raw_data[:message], raw_data[:last_sql], mode: :activerecord
+          question, raw_data[:message], raw_data[:last_code], mode: :activerecord
         )
         return {
           question: question,
           content: explanation,
-          sql: raw_data[:last_sql],
+          code: raw_data[:last_code],
+          code_type: "activerecord",
           successful: false
         }
       end
@@ -111,7 +115,8 @@ module Glancer
       {
         question: question,
         content: Glancer::Workflow::LLM.humanized_response(question, raw_data, code, mode: :activerecord),
-        sql: code,
+        code: code,
+        code_type: "activerecord",
         successful: true,
         sources: embeddings.map { |e| { id: e.id, type: e.source_type, path: e.source_path, score: e.score } }
       }

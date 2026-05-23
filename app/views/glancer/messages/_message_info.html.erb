@@ -37,37 +37,36 @@
           <% end %>
 
           <%# Generated code (SQL or ActiveRecord) %>
-          <% if message_info.sql.present? %>
-            <% code_is_sql = message_info.sql.strip.match?(/\A\s*(?:SELECT|WITH)\b/i) %>
-            <% code_lang   = code_is_sql ? "sql" : "ruby" %>
-            <% code_label  = code_is_sql ? t("glancer.info_panel.current_sql") : t("glancer.info_panel.current_code") %>
+          <% if message_info.code.present? %>
+            <% code_lang  = message_info.code_type == "activerecord" ? "ruby" : "sql" %>
+            <% code_label = message_info.code_type == "activerecord" ? t("glancer.info_panel.current_code") : t("glancer.info_panel.current_sql") %>
             <div>
               <div class="flex items-center justify-between mb-2">
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= code_label %></p>
                 <div class="flex items-center gap-2">
-                  <% if message_info.user_edited_sql? %>
+                  <% if message_info.user_edited_code? %>
                     <span class="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 px-2 py-0.5 rounded-full"><%= t("glancer.info_panel.user_edited") %></span>
                   <% end %>
                   <button class="p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                           data-action="click->message#copySql"
-                          data-sql="<%= j message_info.sql.strip %>"
+                          data-sql="<%= j message_info.code.strip %>"
                           aria-label="<%= t('glancer.messages.copy_sql') %>">
                     <svg class="w-3 h-3" aria-hidden="true"><use href="#icon-copy"/></svg>
                   </button>
                 </div>
               </div>
               <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                <pre class="!m-0 !rounded-none text-xs overflow-x-auto p-4"><code class="language-<%= code_lang %>"><%= message_info.sql.strip %></code></pre>
+                <pre class="!m-0 !rounded-none text-xs overflow-x-auto p-4"><code class="language-<%= code_lang %>"><%= message_info.code.strip %></code></pre>
               </div>
             </div>
           <% end %>
 
-          <%# SQL version history %>
-          <% versions = message_info.sql_versions.order(created_at: :desc) %>
+          <%# Code version history %>
+          <% versions = message_info.code_versions.order(created_at: :desc) %>
           <% if versions.any? %>
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-                <%= t("glancer.info_panel.sql_versions", count: versions.size) %>
+                <%= t("glancer.info_panel.code_versions", count: versions.size) %>
               </p>
               <div class="space-y-2">
                 <% versions.each_with_index do |version, idx| %>
@@ -93,15 +92,15 @@
                         <% end %>
                         <button class="p-0.5 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 data-action="click->message#copySql"
-                                data-sql="<%= j version.sql.strip %>"
+                                data-sql="<%= j version.code.strip %>"
                                 aria-label="<%= t('glancer.messages.copy_sql') %>">
                           <svg class="w-3 h-3" aria-hidden="true"><use href="#icon-copy"/></svg>
                         </button>
                       </div>
                     </summary>
                     <div class="overflow-x-auto">
-                      <% version_lang = version.sql.strip.match?(/\A\s*(?:SELECT|WITH)\b/i) ? "sql" : "ruby" %>
-                      <pre class="!m-0 !rounded-none text-[11px] p-3"><code class="language-<%= version_lang %>"><%= version.sql.strip %></code></pre>
+                      <% version_lang = message_info.code_type == "activerecord" ? "ruby" : "sql" %>
+                      <pre class="!m-0 !rounded-none text-[11px] p-3"><code class="language-<%= version_lang %>"><%= version.code.strip %></code></pre>
                     </div>
                   </details>
                 <% end %>

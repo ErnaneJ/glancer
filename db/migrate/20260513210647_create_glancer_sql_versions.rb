@@ -2,13 +2,17 @@
 
 class CreateGlancerSqlVersions < ActiveRecord::Migration[6.1]
   def change
-    create_table :glancer_sql_versions do |t|
+    table_name = table_exists?(:glancer_code_versions) ? :glancer_code_versions : :glancer_sql_versions
+
+    create_table table_name do |t|
       t.references :message, null: false, foreign_key: { to_table: :glancer_messages }
-      t.text :sql, null: false
+      t.text :code, null: false
       t.string :source, null: false, default: "generated"
       t.timestamps
     end
 
-    add_index :glancer_sql_versions, :created_at
+    add_index table_name, :created_at
+  rescue ActiveRecord::StatementInvalid
+    # Table already exists — skip
   end
 end

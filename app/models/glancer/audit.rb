@@ -6,7 +6,7 @@ module Glancer
 
     belongs_to :message, class_name: "Glancer::Message", optional: true
 
-    validates :sql, :adapter, :run_id, :executed_at, presence: true
+    validates :code, :adapter, :run_id, :executed_at, presence: true
     validates :run_id, uniqueness: true
   end
 end

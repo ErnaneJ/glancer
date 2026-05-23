@@ -14,13 +14,14 @@ module Glancer
       @response_message = @chat.messages.create!(
         role: :assistant,
         content: format_response(response),
-        sql: response[:sql],
+        code: response[:code],
+        code_type: response[:code_type] || "sql",
         user_message: @message,
         successful: response[:successful],
         llm_model: used_model
       )
 
-      @response_message.sql_versions.create!(sql: @response_message.sql, source: :generated) if @response_message.sql.present?
+      @response_message.code_versions.create!(code: @response_message.code, source: :generated) if @response_message.code.present?
 
       # Generate title from first user message
       if @chat.messages.where(role: :user).count == 1
@@ -36,17 +37,27 @@ module Glancer
       end
     end
 
-    def run_sql
+    def run_code
       @message = Glancer::Message.find(params[:id])
-      custom_sql = params[:custom_sql].presence
+      custom_code = params[:custom_code].presence
 
-      if custom_sql
-        Glancer::Workflow::SQLSanitizer.ensure_safe!(custom_sql)
-        @message.update!(sql: custom_sql, user_edited_sql: true)
-        @message.sql_versions.create!(sql: custom_sql, source: :user_edited)
+      if custom_code
+        if @message.code_type == "activerecord"
+          Glancer::Workflow::ARSanitizer.ensure_safe!(custom_code)
+          @message.update!(code: custom_code, user_edited_code: true)
+          @message.code_versions.create!(code: custom_code, source: :user_edited)
+          @data = Glancer::Workflow::ARExecutor.execute(@message.code, message_id: @message.id)
+        else
+          Glancer::Workflow::SQLSanitizer.ensure_safe!(custom_code)
+          @message.update!(code: custom_code, user_edited_code: true)
+          @message.code_versions.create!(code: custom_code, source: :user_edited)
+          @data = Glancer::Workflow::Executor.execute(@message.code, message_id: @message.id)
+        end
+      elsif @message.code_type == "activerecord"
+        @data = Glancer::Workflow::ARExecutor.execute(@message.code, message_id: @message.id)
+      else
+        @data = Glancer::Workflow::Executor.execute(@message.code, message_id: @message.id)
       end
-
-      @data = Glancer::Workflow::Executor.execute(@message.sql, message_id: @message.id)
 
       respond_to do |format|
         format.turbo_stream do
@@ -73,9 +84,14 @@ module Glancer
         return
       end
 
+      unless @message.code_type == "sql" || @message.code_type.nil?
+        redirect_to glancer.root_path, alert: "Only SQL queries can be opened in Blazer."
+        return
+      end
+
       query = Blazer::Query.create!(
         name: "Glancer: #{@message.user_message&.content&.truncate(60) || "Query"}",
-        statement: @message.sql.strip
+        statement: @message.code.strip
       )
 
       redirect_to "#{blazer_path}/queries/#{query.id}/edit", allow_other_host: true

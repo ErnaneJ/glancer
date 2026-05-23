@@ -16,8 +16,8 @@ module Glancer
         now = Time.current.strftime("%Y-%m-%d %H:%M:%S")
 
         history_context = history.map do |msg|
-          if msg.role == "assistant" && msg.sql.present?
-            "ASSISTANT (Ruby expression used): #{msg.sql.strip}\nASSISTANT (response): #{msg.content}"
+          if msg.role == "assistant" && msg.code.present?
+            "ASSISTANT (Ruby expression used): #{msg.code.strip}\nASSISTANT (response): #{msg.content}"
           else
             "#{msg.role.upcase}: #{msg.content}"
           end

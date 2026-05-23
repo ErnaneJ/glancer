@@ -41,7 +41,7 @@ pt-BR:
       current_sql: "SQL Atual"
       current_code: "Código Gerado"
       user_edited: "Editado pelo usuário"
-      sql_versions: "Versões SQL (%{count})"
+      code_versions: "Versões de Código (%{count})"
       execution_history: "Histórico de Execução (%{count})"
       status: "Status"
       created_at: "Criado em"

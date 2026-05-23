@@ -35,7 +35,7 @@ module Glancer
           .where.not(question: [nil, ""])
           .order(executed_at: :desc)
           .limit(3)
-          .pluck(:question, :sql)
+          .pluck(:question, :code)
       rescue StandardError
         []
       end

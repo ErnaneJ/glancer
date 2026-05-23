@@ -66,7 +66,7 @@ RSpec.describe Glancer::Workflow::PromptBuilder do
       let(:assistant_msg) do
         Glancer::Message.create!(
           chat: chat, role: "assistant", content: "Here are the orders",
-          sql: "SELECT * FROM orders"
+          code: "SELECT * FROM orders"
         )
       end
       let(:history) { [user_msg, assistant_msg] }

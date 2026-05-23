@@ -50,7 +50,7 @@ RSpec.describe Glancer::Workflow::Builder do
     it "includes recent audit examples as few-shot examples" do
       Glancer::Audit.create!(
         question: "How many users?",
-        sql: "SELECT COUNT(*) FROM users /*glancer,run_id:abc*/",
+        code: "SELECT COUNT(*) FROM users /*glancer,run_id:abc*/",
         adapter: Glancer.configuration.resolved_adapter.to_s,
         run_id: SecureRandom.uuid,
         executed_at: Time.current
@@ -67,11 +67,11 @@ RSpec.describe Glancer::Workflow::Builder do
       expect(described_class.recent_examples).to eq([])
     end
 
-    it "returns up to 3 most recent audit pairs [question, sql]" do
+    it "returns up to 3 most recent audit pairs [question, code]" do
       4.times do |i|
         Glancer::Audit.create!(
           question: "Q#{i}",
-          sql: "SELECT #{i}",
+          code: "SELECT #{i}",
           adapter: Glancer.configuration.resolved_adapter.to_s,
           run_id: SecureRandom.uuid,
           executed_at: Time.current - (4 - i).seconds
@@ -86,7 +86,7 @@ RSpec.describe Glancer::Workflow::Builder do
     it "only returns audits matching the current adapter" do
       Glancer::Audit.create!(
         question: "PostgreSQL Q",
-        sql: "SELECT 1",
+        code: "SELECT 1",
         adapter: "postgres",
         run_id: SecureRandom.uuid,
         executed_at: Time.current
@@ -103,7 +103,7 @@ RSpec.describe Glancer::Workflow::Builder do
     it "excludes audits without a question" do
       Glancer::Audit.create!(
         question: nil,
-        sql: "SELECT 1",
+        code: "SELECT 1",
         adapter: Glancer.configuration.resolved_adapter.to_s,
         run_id: SecureRandom.uuid,
         executed_at: Time.current

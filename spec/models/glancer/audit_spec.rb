@@ -5,7 +5,7 @@ require "spec_helper"
 RSpec.describe Glancer::Audit do
   let(:valid_attrs) do
     {
-      sql: "SELECT 1 /*glancer,run_id:abc*/",
+      code: "SELECT 1 /*glancer,run_id:abc*/",
       adapter: "sqlite",
       run_id: SecureRandom.uuid,
       executed_at: Time.current
@@ -21,10 +21,10 @@ RSpec.describe Glancer::Audit do
       expect(audit).to be_valid
     end
 
-    it "is invalid without sql" do
-      audit.sql = nil
+    it "is invalid without code" do
+      audit.code = nil
       expect(audit).not_to be_valid
-      expect(audit.errors[:sql]).to be_present
+      expect(audit.errors[:code]).to be_present
     end
 
     it "is invalid without adapter" do

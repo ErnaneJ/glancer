@@ -61,10 +61,10 @@ RSpec.describe Glancer::Workflow::Executor do
       expect(audit.run_id).not_to be_empty
     end
 
-    it "appends the /*glancer,run_id:...*/ comment to the stored SQL" do
+    it "appends the /*glancer,run_id:...*/ comment to the stored code" do
       described_class.execute(valid_sql)
       audit = Glancer::Audit.last
-      expect(audit.sql).to include("/*glancer,run_id:")
+      expect(audit.code).to include("/*glancer,run_id:")
     end
 
     it "stores the original_question in the audit record" do
@@ -114,7 +114,7 @@ RSpec.describe Glancer::Workflow::Executor do
       expect(result).to be_a(Hash)
       expect(result[:error]).to be(true)
       expect(result[:message]).to be_a(String)
-      expect(result[:last_sql]).to eq(bad_sql)
+      expect(result[:last_code]).to eq(bad_sql)
     end
   end
 

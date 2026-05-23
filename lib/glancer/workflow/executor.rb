@@ -27,7 +27,8 @@ module Glancer
           # Audit successful execution
           Glancer::Audit.create!(
             question: original_question,
-            sql: sql_with_comment,
+            code: sql_with_comment,
+            code_type: "sql",
             adapter: Glancer.configuration.resolved_adapter,
             run_id: run_id,
             executed_at: Time.current,
@@ -39,7 +40,7 @@ module Glancer
           # Stop recursion if we reached the maximum number of attempts (3)
           if attempt >= 3
             Glancer::Utils::Logger.error("Workflow::Executor", "Final failure after #{attempt} attempts: #{e.message}")
-            return { error: true, message: e.message, last_sql: sql }
+            return { error: true, message: e.message, last_code: sql }
           end
 
           Glancer::Utils::Logger.warn("Workflow::Executor",

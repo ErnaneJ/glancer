@@ -63,7 +63,8 @@ RSpec.describe Glancer::Workflow do
       Glancer::Workflow::Cache.write(question, {
                                        question: question,
                                        content: "Cached answer",
-                                       sql: sql,
+                                       code: sql,
+                                       code_type: "sql",
                                        successful: true
                                      })
     end
@@ -120,9 +121,9 @@ RSpec.describe Glancer::Workflow do
       expect(result[:successful]).to be(true)
     end
 
-    it "returns :sql with the extracted SQL" do
+    it "returns :code with the extracted SQL" do
       result = described_class.run(chat.id, question)
-      expect(result[:sql]).to include("SELECT")
+      expect(result[:code]).to include("SELECT")
     end
 
     it "returns :content with the humanized response" do
@@ -174,9 +175,9 @@ RSpec.describe Glancer::Workflow do
       expect(result[:content]).to include("users")
     end
 
-    it "includes the SQL that failed validation" do
+    it "includes the code that failed validation" do
       result = described_class.run(chat.id, question)
-      expect(result[:sql]).to be_a(String)
+      expect(result[:code]).to be_a(String)
     end
   end
 
@@ -190,7 +191,7 @@ RSpec.describe Glancer::Workflow do
       allow(Glancer::Workflow::Builder).to receive(:build_sql).and_return(sql)
       allow(Glancer::Workflow::SQLValidator).to receive(:validate_tables_exist!)
       allow(Glancer::Workflow::Executor).to receive(:execute).and_return(
-        { error: true, message: "no such table: users", last_sql: sql }
+        { error: true, message: "no such table: users", last_code: sql }
       )
       allow(Glancer::Workflow::LLM)
         .to receive(:explain_error)

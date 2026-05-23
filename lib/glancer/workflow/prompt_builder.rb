@@ -24,8 +24,8 @@ module Glancer
         Glancer::Utils::Logger.debug("Workflow::PromptBuilder", "Current time: #{now}, Adapter: #{adapter}, DB: #{db_name}")
 
         history_context = history.map do |msg|
-          if msg.role == "assistant" && msg.sql.present?
-            "ASSISTANT (SQL used): #{msg.sql.strip}\nASSISTANT (response): #{msg.content}"
+          if msg.role == "assistant" && msg.code.present?
+            "ASSISTANT (SQL used): #{msg.code.strip}\nASSISTANT (response): #{msg.content}"
           else
             "#{msg.role.upcase}: #{msg.content}"
           end

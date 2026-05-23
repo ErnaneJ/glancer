@@ -1,6 +1,6 @@
 <% if data.present? && data.any? %>
   <%# Warning: only when there is no LIMIT and no explicit time filter %>
-  <% sql_text = @message&.sql.to_s.downcase %>
+  <% sql_text = @message&.code.to_s.downcase %>
   <% has_no_limit   = !sql_text.match?(/\blimit\b|\btop\s+\d/) %>
   <% has_time_filter = sql_text.match?(/interval|date_sub|date_add|date_format|curdate|now\s*\(|getdate|dateadd|datediff|sysdate|between\s+[\w'"]+\s+and\s+[\w'"]+|\d{4}-\d{2}-\d{2}/) %>
   <% is_large = data.size >= 500 %>
