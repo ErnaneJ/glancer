@@ -10,7 +10,7 @@ module Glancer
     # Nullify self-referential FK before destroy to avoid MySQL constraint violation
     # when the chat cascade reaches user messages before their assistant counterparts
     before_destroy { self.class.where(user_message_id: id).update_all(user_message_id: nil) }
-    enum role: { user: "user", assistant: "assistant", system: "system" }
+    enum :role, user: "user", assistant: "assistant", system: "system"
     validates :content, presence: true
 
     def sql_result_json
