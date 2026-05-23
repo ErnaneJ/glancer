@@ -5,12 +5,12 @@ module Glancer
   module Utils
     class MarkdownHelper
       def self.markdown_to_html(markdown_text)
-        content = Commonmarker.to_html(markdown_text, options: {
+        content = Commonmarker.to_html(markdown_text,
+                                       options: {
                                          parse: { smart: true },
-                                         render: { unsafe: true, escape: false, github_pre_lang: true,
-                                                   ignore_empty_links: true },
-                                         plugins: { syntax_highlighter: { theme: "InspiredGitHub" } }
-                                       })
+                                         render: { unsafe: true, github_pre_lang: true }
+                                       },
+                                       plugins: { syntax_highlighter: { theme: "InspiredGitHub" } })
 
         content.gsub!(%r{<table.*?</table>}m) do |table_html|
           %(<div class="table-scroll-wrapper"><div class="table-scroll-inner">#{table_html}</div></div>)

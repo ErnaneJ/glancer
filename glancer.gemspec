@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "Glancer is a Ruby on Rails engine that enables natural language queries over your database using RAG and LLMs."
   spec.homepage = "https://github.com/ernanej/glancer"
   spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 3.3.0"
 
   # Metadata
   spec.metadata["allowed_push_host"]   = "https://rubygems.org"
@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Dependencies
-  spec.add_dependency "commonmarker", "~> 1.1"
+  spec.add_dependency "commonmarker", "~> 2.8"
   spec.add_dependency "rails", ">= 7.0"
   spec.add_dependency "ruby_llm", "~> 1.3"
   spec.add_dependency "stimulus-rails", ">= 1.0"
