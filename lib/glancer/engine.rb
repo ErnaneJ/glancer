@@ -14,10 +14,6 @@ module Glancer
       end
     end
 
-    Glancer::Engine.routes.draw do
-      instance_eval(File.read(File.expand_path("../../config/routes.rb", __dir__)))
-    end
-
     initializer "glancer.assets" do |app|
       app.config.assets.paths << root.join("app/assets/javascripts")
       app.config.assets.precompile += %w[
