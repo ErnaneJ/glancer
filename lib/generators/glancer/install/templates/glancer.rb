@@ -17,10 +17,20 @@ Glancer.configure do |config|
   # in read-only mode).
   config.read_only_db = nil
 
-  # Maximum time a single SQL query may run before being killed.
+  # Maximum time a single query may run before being killed.
   # PostgreSQL uses SET statement_timeout; MySQL uses SET max_execution_time.
   # SQLite has no server-side timeout enforcement.
   config.statement_timeout = 30.seconds
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Query mode
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Controls how Glancer generates and executes database queries.
+  # :sql          — LLM generates a raw SELECT statement (default, most portable)
+  # :activerecord — LLM generates a Ruby/ActiveRecord expression; lets the LLM
+  #                 reuse your model scopes, associations, and named queries
+  config.query_mode = :sql
 
   # ─────────────────────────────────────────────────────────────────────────────
   # LLM — Default provider (fallback for all roles below)
@@ -37,16 +47,16 @@ Glancer.configure do |config|
   config.llm_model = "gemini-2.0-flash"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # LLM — SQL generation (overrides default for query building)
+  # LLM — Code generation (overrides default for query building)
   # ─────────────────────────────────────────────────────────────────────────────
 
-  # Provider used for SQL generation. Nil → falls back to llm_provider.
-  # Useful when you want a code-focused model (e.g. gpt-4o) for SQL generation
+  # Provider used for code generation. Nil → falls back to llm_provider.
+  # Useful when you want a code-focused model (e.g. gpt-4o) for query generation
   # and a cheaper model for responses.
   # Accepted: nil | :gemini | :openai | :openrouter
   config.sql_provider = nil
 
-  # Model used for SQL generation. Nil → falls back to llm_model.
+  # Model used for code generation. Nil → falls back to llm_model.
   config.sql_model = nil
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -70,10 +80,10 @@ Glancer.configure do |config|
   #
   # IMPORTANT — OpenRouter embedding support:
   #   OpenRouter does not expose a native embedding API. If you use OpenRouter
-  #   for chat/SQL, set embedding_provider to :gemini or :openai to avoid errors.
-  #   If you must use an OpenRouter embedding model anyway, set embedding_model
-  #   explicitly (e.g., "openai/text-embedding-3-small") — Glancer will bypass
-  #   the model registry check automatically.
+  #   for chat/code generation, set embedding_provider to :gemini or :openai to
+  #   avoid errors. If you must use an OpenRouter embedding model anyway, set
+  #   embedding_model explicitly (e.g., "openai/text-embedding-3-small") —
+  #   Glancer will bypass the model registry check automatically.
   #
   # Accepted: nil | :gemini | :openai | :openrouter
   config.embedding_provider = nil
@@ -89,31 +99,31 @@ Glancer.configure do |config|
   # ─────────────────────────────────────────────────────────────────────────────
 
   # Use provider-specific keys (preferred) or api_key as a generic fallback.
-  config.gemini_api_key = ENV["GEMINI_API_KEY"]
-  # config.openai_api_key    = ENV["OPENAI_API_KEY"]
-  # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
-  # config.api_key           = ENV["LLM_API_KEY"]  # generic fallback for any provider
+  config.gemini_api_key = ENV.fetch("GEMINI_API_KEY", nil)
+  # config.openai_api_key     = ENV.fetch("OPENAI_API_KEY", nil)
+  # config.openrouter_api_key = ENV.fetch("OPENROUTER_API_KEY", nil)
+  # config.api_key            = ENV.fetch("LLM_API_KEY", nil)  # generic fallback for any provider
 
   # ─── Example: different providers per role ──────────────────────────────────
-  # config.llm_provider       = :gemini                        # default fallback
+  # config.llm_provider       = :gemini                              # default fallback
   # config.llm_model          = "gemini-2.0-flash"
-  # config.sql_provider       = :openai                        # code-focused model for SQL
+  # config.sql_provider       = :openai                              # code-focused model for queries
   # config.sql_model          = "gpt-4o"
-  # config.chat_provider      = :gemini                        # cheaper for chat
+  # config.chat_provider      = :gemini                              # cheaper for chat
   # config.chat_model         = "gemini-2.0-flash"
-  # config.embedding_provider = :gemini                        # dedicated embeddings
+  # config.embedding_provider = :gemini                              # dedicated embeddings
   # config.embedding_model    = "text-embedding-004"
-  # config.gemini_api_key     = ENV["GEMINI_API_KEY"]
-  # config.openai_api_key     = ENV["OPENAI_API_KEY"]
-  # ─── Example: OpenRouter for chat/SQL, Gemini for embeddings (recommended) ──
+  # config.gemini_api_key     = ENV.fetch("GEMINI_API_KEY", nil)
+  # config.openai_api_key     = ENV.fetch("OPENAI_API_KEY", nil)
+  # ─── Example: OpenRouter for chat/code gen, Gemini for embeddings (recommended) ──
   # OpenRouter does not expose a native embedding API, so always pair it with
   # a dedicated embedding provider (:gemini or :openai).
   # config.llm_provider       = :openrouter
-  # config.openrouter_api_key = ENV["OPENROUTER_API_KEY"]
+  # config.openrouter_api_key = ENV.fetch("OPENROUTER_API_KEY", nil)
   # config.llm_model          = "anthropic/claude-3.5-sonnet"
   # config.sql_model          = "deepseek/deepseek-r1:free"
   # config.embedding_provider = :gemini
-  # config.gemini_api_key     = ENV["GEMINI_API_KEY"]
+  # config.gemini_api_key     = ENV.fetch("GEMINI_API_KEY", nil)
   # config.embedding_model    = "text-embedding-004"
   # ───────────────────────────────────────────────────────────────────────────
 
@@ -174,7 +184,7 @@ Glancer.configure do |config|
   # How long identical questions are served from the in-memory cache without
   # calling the LLM again. Set to 0 to disable. Cache is process-local (not
   # shared across Puma workers or restarts).
-  config.workflow_cache_ttl = 1.minute
+  config.workflow_cache_ttl = 5.minutes
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Logging
@@ -193,7 +203,7 @@ Glancer.configure do |config|
   # Integrations
   # ─────────────────────────────────────────────────────────────────────────────
 
-  # Blazer integration: enables an "Open in Blazer" button on generated SQL queries.
+  # Blazer integration: enables an "Open in Blazer" button on generated queries.
   # Auto-detected if the blazer gem is installed (defaults to "/blazer").
   # Set explicitly to override the path, or to "" / nil to disable.
   # config.blazer_path = "/blazer"
