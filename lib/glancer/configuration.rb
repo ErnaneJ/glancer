@@ -49,6 +49,9 @@ module Glancer
       self.chat_model = nil          # nil → uses llm_model (for humanized responses)
       self.blazer_path = nil         # nil → auto-detected if Blazer::Engine is mounted
       self.query_mode = :sql         # :sql (default) or :activerecord
+      self.query_enrichment_enabled = false # enrich question with table names before retrieval
+      self.enrichment_provider = nil        # nil → falls back to llm_provider
+      self.enrichment_model = nil           # nil → falls back to llm_model
     end
 
     # === READERS ===
@@ -62,7 +65,8 @@ module Glancer
                 :embedding_provider, :embedding_model,
                 :code_provider, :code_model,
                 :chat_provider, :chat_model,
-                :blazer_path, :query_mode
+                :blazer_path, :query_mode,
+                :query_enrichment_enabled, :enrichment_provider, :enrichment_model
 
     # === WRITERS ===
     def adapter=(value)
@@ -294,6 +298,34 @@ module Glancer
 
     def resolved_chat_model
       chat_model || llm_model
+    end
+
+    def query_enrichment_enabled=(value)
+      raise ArgumentError, "query_enrichment_enabled must be true or false" unless [true, false].include?(value)
+
+      @query_enrichment_enabled = value
+    end
+
+    def enrichment_provider=(value)
+      unless value.nil? || LLM_PROVIDERS.include?(value)
+        raise ArgumentError, "enrichment_provider must be nil or one of: #{LLM_PROVIDERS.join(", ")}"
+      end
+
+      @enrichment_provider = value
+    end
+
+    def enrichment_model=(value)
+      raise ArgumentError, "enrichment_model must be nil or a String" unless value.nil? || value.is_a?(String)
+
+      @enrichment_model = value
+    end
+
+    def resolved_enrichment_provider
+      enrichment_provider || llm_provider
+    end
+
+    def resolved_enrichment_model
+      enrichment_model || llm_model
     end
 
     def blazer_path=(value)

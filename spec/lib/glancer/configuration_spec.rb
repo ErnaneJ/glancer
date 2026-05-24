@@ -758,4 +758,101 @@ RSpec.describe Glancer::Configuration do
       expect { config.query_mode = "sql" }.to raise_error(ArgumentError)
     end
   end
+
+  # ── query_enrichment_enabled= ─────────────────────────────────────────────
+
+  describe "#query_enrichment_enabled=" do
+    it "defaults to false" do
+      expect(config.query_enrichment_enabled).to be(false)
+    end
+
+    it "accepts true" do
+      config.query_enrichment_enabled = true
+      expect(config.query_enrichment_enabled).to be(true)
+    end
+
+    it "accepts false" do
+      config.query_enrichment_enabled = true
+      config.query_enrichment_enabled = false
+      expect(config.query_enrichment_enabled).to be(false)
+    end
+
+    it "raises ArgumentError for non-boolean values" do
+      expect { config.query_enrichment_enabled = "yes" }.to raise_error(ArgumentError)
+    end
+  end
+
+  # ── enrichment_provider= ──────────────────────────────────────────────────
+
+  describe "#enrichment_provider=" do
+    it "defaults to nil" do
+      expect(config.enrichment_provider).to be_nil
+    end
+
+    it "accepts a valid provider" do
+      config.enrichment_provider = :openai
+      expect(config.enrichment_provider).to eq(:openai)
+    end
+
+    it "accepts nil" do
+      config.enrichment_provider = :gemini
+      config.enrichment_provider = nil
+      expect(config.enrichment_provider).to be_nil
+    end
+
+    it "raises ArgumentError for invalid providers" do
+      expect { config.enrichment_provider = :unknown }.to raise_error(ArgumentError)
+    end
+  end
+
+  # ── enrichment_model= ─────────────────────────────────────────────────────
+
+  describe "#enrichment_model=" do
+    it "defaults to nil" do
+      expect(config.enrichment_model).to be_nil
+    end
+
+    it "accepts a String model name" do
+      config.enrichment_model = "gemini-2.0-flash"
+      expect(config.enrichment_model).to eq("gemini-2.0-flash")
+    end
+
+    it "accepts nil" do
+      config.enrichment_model = "some-model"
+      config.enrichment_model = nil
+      expect(config.enrichment_model).to be_nil
+    end
+
+    it "raises ArgumentError for non-string values" do
+      expect { config.enrichment_model = :flash }.to raise_error(ArgumentError)
+    end
+  end
+
+  # ── resolved_enrichment_provider / resolved_enrichment_model ──────────────
+
+  describe "#resolved_enrichment_provider" do
+    it "falls back to llm_provider when enrichment_provider is nil" do
+      config.llm_provider = :openai
+      config.enrichment_provider = nil
+      expect(config.resolved_enrichment_provider).to eq(:openai)
+    end
+
+    it "returns enrichment_provider when set" do
+      config.enrichment_provider = :openrouter
+      expect(config.resolved_enrichment_provider).to eq(:openrouter)
+    end
+  end
+
+  describe "#resolved_enrichment_model" do
+    it "falls back to llm_model when enrichment_model is nil" do
+      config.llm_model = "gpt-4o"
+      config.enrichment_model = nil
+      expect(config.resolved_enrichment_model).to eq("gpt-4o")
+    end
+
+    it "returns enrichment_model when set" do
+      config.enrichment_model = "gemini-2.0-flash"
+      expect(config.resolved_enrichment_model).to eq("gemini-2.0-flash")
+    end
+  end
 end
