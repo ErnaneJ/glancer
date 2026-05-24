@@ -6,7 +6,7 @@
   <div class="message user flex justify-end">
     <div class="max-w-[78%] sm:max-w-[65%] min-w-0">
       <div class="user-message-prose bg-primary-600 dark:bg-primary-700 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm leading-relaxed prose prose-sm max-w-none overflow-hidden break-words">
-        <%= raw Glancer::Utils::MarkdownHelper.markdown_to_html(message.content) %>
+        <%= raw Glancer::Utils::MarkdownHelper.markdown_to_html(message.content, schema_base: glancer.db_schema_path, valid_tables: glancer_table_names) %>
       </div>
       <div class="flex items-center justify-end gap-2 mt-1.5 px-1">
         <span class="text-[11px] text-gray-400 dark:text-gray-500" title="<%= time_full %>"><%= time_label %></span>
@@ -23,8 +23,30 @@
   </div>
 
 <% elsif message.assistant? %>
+  <%# ── Processing placeholder ─────────────────────────────────────────── %>
+  <% if message.processing? || message.pending? %>
+    <div id="message-<%= message.id %>"
+         class="message assistant flex items-start gap-3"
+         data-controller="message"
+         data-message-poll-url-value="<%= glancer.poll_message_path(message) %>"
+         data-message-is-processing-value="true">
+      <div class="flex-shrink-0 mt-0.5 w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-950 flex items-center justify-center" aria-hidden="true">
+        <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400"><use href="#icon-database"/></svg>
+      </div>
+      <div class="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-gray-500" role="status" aria-live="polite">
+        <span data-message-target="processingLabel">Processing…</span>
+        <span class="flex gap-0.5" aria-hidden="true">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-400 dark:bg-primary-500 animate-bounce" style="animation-delay:0ms"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-400 dark:bg-primary-500 animate-bounce" style="animation-delay:150ms"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-400 dark:bg-primary-500 animate-bounce" style="animation-delay:300ms"></span>
+        </span>
+      </div>
+    </div>
+
+  <% else %>
+  <%# ── Completed assistant message ──────────────────────────────────────── %>
   <%# Assistant message: left-aligned with avatar %>
-  <div class="message assistant flex items-start gap-3" data-controller="message">
+  <div id="message-<%= message.id %>" class="message assistant flex items-start gap-3" data-controller="message">
     <div class="flex-shrink-0 mt-0.5 w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-950 flex items-center justify-center" aria-hidden="true">
       <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400"><use href="#icon-database"/></svg>
     </div>
@@ -32,7 +54,7 @@
     <div class="flex-1 min-w-0">
       <%# Response text %>
       <div class="message-content prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-200 leading-relaxed">
-        <%= raw Glancer::Utils::MarkdownHelper.markdown_to_html(message.content) %>
+        <%= raw Glancer::Utils::MarkdownHelper.markdown_to_html(message.content, schema_base: glancer.db_schema_path, valid_tables: glancer_table_names) %>
       </div>
 
       <%# Code block for successful queries — hidden initially for new messages; revealed after typewriter %>
@@ -56,16 +78,17 @@
                 <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-copy"/></svg>
               </button>
 
-              <%# Edit code %>
+              <%# Edit code — icon swaps to X while in edit mode %>
               <button class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                       data-action="click->message#toggleEditSql"
                       data-message-id="<%= message.id %>"
+                      data-message-target="editBtn"
                       aria-label="<%= t('glancer.messages.edit_sql') %>">
                 <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-edit"/></svg>
               </button>
 
-              <%# Open in Blazer %>
-              <% if Glancer.configuration.resolved_blazer_path.present? %>
+              <%# Open in Blazer — only for SQL mode %>
+              <% if Glancer.configuration.resolved_blazer_path.present? && message.code_type != "activerecord" %>
                 <%= form_with url: glancer.open_message_in_blazer_path(message), method: :post, data: { turbo: false }, class: "contents" do %>
                   <button type="submit"
                           class="flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -103,17 +126,19 @@
             <pre class="!m-0 !rounded-none !border-0 text-xs p-3"><code id="sql-code-<%= message.id %>" class="<%= lang_class %>"><%= message.code.strip %></code></pre>
           </div>
 
-          <%# Code textarea (edit mode, hidden by default) %>
+          <%# Code editor (edit mode, hidden by default) — contenteditable with live Prism highlighting %>
           <div id="sql-editor-wrapper-<%= message.id %>" class="hidden">
             <div class="px-3 py-1.5 bg-[#1e1e2e] border-t border-gray-700 flex items-center gap-1.5">
               <svg class="w-3 h-3 text-primary-400" aria-hidden="true"><use href="#icon-edit"/></svg>
               <span class="text-[10px] font-medium text-gray-500 uppercase tracking-wider"><%= message.code_type == "activerecord" ? "Editing Ruby" : "Editing SQL" %></span>
             </div>
-            <textarea id="sql-editor-<%= message.id %>"
-                      class="glancer-sql-editor w-full p-3 border-0 outline-none resize-none min-h-[80px]"
-                      spellcheck="false"
-                      rows="4"
-                      aria-label="<%= t('glancer.messages.edit_sql') %>"></textarea>
+            <div id="sql-editor-<%= message.id %>"
+                 class="glancer-code-editor language-<%= message.code_type == "activerecord" ? "ruby" : "sql" %>"
+                 contenteditable="true"
+                 spellcheck="false"
+                 role="textbox"
+                 aria-multiline="true"
+                 aria-label="<%= t('glancer.messages.edit_sql') %>"></div>
           </div>
 
           <%# Results section: persistent toggle strip + collapsible container %>
@@ -122,16 +147,24 @@
             <div id="results-header-<%= message.id %>"
                  class="hidden items-center justify-between px-3 py-1.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
               <span id="results-meta-<%= message.id %>" class="text-[11px] text-gray-400 dark:text-gray-500"></span>
-              <button data-action="click->message#toggleResults"
-                      data-message-id="<%= message.id %>"
-                      class="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      aria-label="Toggle results">
-                <svg id="results-arrow-<%= message.id %>"
-                     class="w-3.5 h-3.5 transition-transform duration-200"
-                     aria-hidden="true">
-                  <use href="#icon-chevron-down"/>
-                </svg>
-              </button>
+              <div class="flex items-center gap-1">
+                <button data-action="click->message#openFullscreenTable"
+                        data-message-id="<%= message.id %>"
+                        class="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        aria-label="Expand table fullscreen">
+                  <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-maximize"/></svg>
+                </button>
+                <button data-action="click->message#toggleResults"
+                        data-message-id="<%= message.id %>"
+                        class="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        aria-label="Toggle results">
+                  <svg id="results-arrow-<%= message.id %>"
+                       class="w-3.5 h-3.5 transition-transform duration-200"
+                       aria-hidden="true">
+                    <use href="#icon-chevron-down"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <%# Collapsible container %>
             <div id="results-<%= message.id %>"
@@ -169,4 +202,5 @@
       </div>
     </div>
   </div>
-<% end %>
+  <% end %><%# end complete/processing branch %>
+<% end %><%# end message.assistant? %>

@@ -44,5 +44,7 @@ require "glancer/workflow/ar_prompt_builder" # Glancer::Workflow::ARPromptBuilde
 require "glancer/workflow/ar_extractor" # Glancer::Workflow::ARExtractor
 require "glancer/workflow/ar_sanitizer" # Glancer::Workflow::ARSanitizer
 require "glancer/workflow/ar_executor" # Glancer::Workflow::ARExecutor
+require "glancer/workflow/query_enricher" # Glancer::Workflow::QueryEnricher
 
 require "glancer/chart_analyzer" # Glancer::ChartAnalyzer
+require "glancer/async_runner"   # Glancer::AsyncRunner

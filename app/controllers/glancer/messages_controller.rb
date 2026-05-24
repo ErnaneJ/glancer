@@ -3,37 +3,51 @@
 module Glancer
   class MessagesController < Glancer::ApplicationController
     def create
-      @chat = Glancer::Chat.find(params[:chat_id])
+      @chat    = Glancer::Chat.find(params[:chat_id])
       @message = @chat.messages.create!(message_params.merge(role: :user))
 
-      response = Glancer::Workflow.run(@chat.id, @message.content)
-
-      cfg = Glancer.configuration
-      used_model = "#{cfg.resolved_chat_provider}/#{cfg.resolved_chat_model}"
-
+      # Placeholder written immediately; ProcessMessageJob fills it in async.
       @response_message = @chat.messages.create!(
         role: :assistant,
-        content: format_response(response),
-        code: response[:code],
-        code_type: response[:code_type] || "sql",
+        content: "",
+        code_type: "sql",
         user_message: @message,
-        successful: response[:successful],
-        llm_model: used_model
+        status: :processing
       )
 
-      @response_message.code_versions.create!(code: @response_message.code, source: :generated) if @response_message.code.present?
-
-      # Generate title from first user message
-      if @chat.messages.where(role: :user).count == 1
-        title = Glancer::Workflow::LLM.generate_title(@message.content)
-        @chat.update!(title: title)
-      end
+      Glancer::AsyncRunner.call(@response_message.id, @message.content)
 
       @chats = Glancer::Chat.order(created_at: :desc)
 
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_to glancer.chat_path(@chat) }
+      end
+    end
+
+    # Clients poll this endpoint every ~2 s while waiting for the async runner.
+    # Returns 204 while still processing; Turbo Stream when complete or failed.
+    # A hard timeout marks stale messages as failed so the UI doesn't loop forever.
+    PROCESSING_TIMEOUT_SECONDS = 300
+
+    def poll
+      @message = Glancer::Message.find(params[:id])
+
+      if (@message.processing? || @message.pending?) &&
+         @message.updated_at < PROCESSING_TIMEOUT_SECONDS.seconds.ago
+        @message.update!(content: "Request timed out. Please try again.", successful: false, status: :failed)
+      end
+
+      return head(:no_content) if @message.processing? || @message.pending?
+
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            "message-#{@message.id}",
+            partial: "glancer/messages/message",
+            locals: { message: @message }
+          )
+        end
       end
     end
 

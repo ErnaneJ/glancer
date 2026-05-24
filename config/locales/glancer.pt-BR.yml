@@ -15,6 +15,8 @@ pt-BR:
       empty_subtitle: "Pergunte qualquer coisa sobre seu banco de dados em linguagem natural."
       placeholder: "Pergunte qualquer coisa sobre seu banco de dados..."
       hint: "Enter para enviar · Shift+Enter para nova linha"
+      mention_tip: "mencione uma tabela"
+      mention_tip_title: "Digite @ para mencionar uma tabela e direcionar a consulta"
       send: "Enviar mensagem"
       record: "Gravar áudio"
     messages:
@@ -38,6 +40,7 @@ pt-BR:
     info_panel:
       title: "Detalhes da mensagem"
       user_question: "Pergunta do usuário"
+      enriched_question: "Pergunta enriquecida"
       current_sql: "SQL Atual"
       current_code: "Código Gerado"
       user_edited: "Editado pelo usuário"
@@ -50,6 +53,13 @@ pt-BR:
       generated: "Gerado"
       user: "Usuário"
       close: "Fechar painel"
+    workflow_steps:
+      enriching: "Enriquecendo a pergunta…"
+      retrieving_context: "Buscando contexto…"
+      generating_code: "Gerando consulta…"
+      validating: "Validando consulta…"
+      executing: "Executando no banco…"
+      humanizing: "Preparando resposta…"
     schema:
       title: "Schema do banco de dados"
       tables_count: "%{count} tabelas indexadas"

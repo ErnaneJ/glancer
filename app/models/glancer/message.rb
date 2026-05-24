@@ -11,7 +11,10 @@ module Glancer
     # when the chat cascade reaches user messages before their assistant counterparts
     before_destroy { self.class.where(user_message_id: id).update_all(user_message_id: nil) }
     enum :role, user: "user", assistant: "assistant", system: "system"
-    validates :content, presence: true
+    enum :status, { pending: 0, processing: 1, complete: 2, failed: 3 }, default: :complete
+
+    # User messages always require content; assistant placeholders start empty.
+    validates :content, presence: true, if: :user?
 
     def sql_result_json
       JSON.parse(content || "[]")

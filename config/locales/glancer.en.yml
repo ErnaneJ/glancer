@@ -15,6 +15,8 @@ en:
       empty_subtitle: "Ask anything about your database in natural language."
       placeholder: "Ask anything about your database..."
       hint: "Enter to send · Shift+Enter for new line"
+      mention_tip: "mention a table"
+      mention_tip_title: "Type @ to mention a specific table and guide the query"
       send: "Send message"
       record: "Record audio"
     messages:
@@ -38,6 +40,7 @@ en:
     info_panel:
       title: "Message details"
       user_question: "User question"
+      enriched_question: "Enriched question"
       current_sql: "Current SQL"
       current_code: "Generated Code"
       user_edited: "User edited"
@@ -50,6 +53,13 @@ en:
       generated: "Generated"
       user: "User"
       close: "Close panel"
+    workflow_steps:
+      enriching: "Enriching question…"
+      retrieving_context: "Retrieving context…"
+      generating_code: "Generating query…"
+      validating: "Validating query…"
+      executing: "Executing on database…"
+      humanizing: "Preparing response…"
     schema:
       title: "Database schema"
       tables_count: "%{count} indexed tables"

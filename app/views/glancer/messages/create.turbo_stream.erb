@@ -1,13 +1,13 @@
 <%# Remove thinking indicator %>
 <%= turbo_stream.remove "thinking-indicator" %>
 
-<%# Replace temp user message with the real server-rendered one (preserves data-* attrs) %>
+<%# Replace temp user message with the real server-rendered one %>
 <%= turbo_stream.replace "temp-user-message" do %>
   <%= render "glancer/messages/message", message: @message %>
 <% end %>
 
-<%# Append the assistant response %>
-<%= turbo_stream.append "chat-messages" do %>
+<%# Append the assistant processing placeholder — polling fills it in when done %>
+<%= turbo_stream.append "messages-list" do %>
   <%= render "glancer/messages/message", message: @response_message %>
 <% end %>
 

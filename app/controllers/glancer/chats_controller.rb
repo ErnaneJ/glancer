@@ -22,7 +22,19 @@ module Glancer
       content = params[:content].to_s.strip
       return render(json: { error: "Message required" }, status: :unprocessable_entity) if content.blank?
 
-      process_new_chat(content)
+      @chat    = Glancer::Chat.create!(title: "New Chat")
+      @message = @chat.messages.create!(role: :user, content: content)
+
+      @response_message = @chat.messages.create!(
+        role: :assistant,
+        content: "",
+        code_type: "sql",
+        user_message: @message,
+        status: :processing
+      )
+
+      Glancer::AsyncRunner.call(@response_message.id, content)
+
       render json: { chat_id: @chat.id }
     rescue StandardError => e
       Glancer::Utils::Logger.error("ChatsController#start", e.message)
@@ -32,30 +44,6 @@ module Glancer
     def destroy
       Glancer::Chat.find(params[:id]).destroy!
       redirect_to glancer.root_path
-    end
-
-    private
-
-    def process_new_chat(content)
-      @chat    = Glancer::Chat.create!(title: "New Chat")
-      @message = @chat.messages.create!(role: :user, content: content)
-      response = Glancer::Workflow.run(@chat.id, @message.content)
-      create_response_message(response)
-      @chat.update!(title: Glancer::Workflow::LLM.generate_title(@message.content))
-    end
-
-    def create_response_message(response)
-      @response_message = @chat.messages.create!(
-        role: :assistant,
-        content: response[:content],
-        code: response[:code],
-        code_type: response[:code_type] || "sql",
-        user_message: @message,
-        successful: response[:successful]
-      )
-      return unless @response_message.code.present?
-
-      @response_message.code_versions.create!(code: @response_message.code, source: :generated)
     end
   end
 end

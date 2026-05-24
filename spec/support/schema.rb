@@ -16,6 +16,8 @@ ActiveRecord::Schema.define do
     t.boolean :successful,       default: true
     t.boolean :user_edited_code, default: false, null: false
     t.string  :llm_model
+    t.text    :enriched_question
+    t.integer :status, null: false, default: 2
     t.timestamps
   end
 

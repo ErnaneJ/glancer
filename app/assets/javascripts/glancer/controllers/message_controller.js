@@ -1,20 +1,23 @@
 import { Controller } from "@hotwired/stimulus"
 
-const PIPELINE_STEPS = [
-  { label: "Generating question embeddings…", ms: 1800 },
-  { label: "Retrieving relevant context…",    ms: 1400 },
-  { label: "Generating SQL query…",           ms: 3000 },
-  { label: "Validating query…",               ms: 800  },
-  { label: "Executing on database…",          ms: 1200 },
-  { label: "Preparing response…",             ms: 2000 },
-];
+// Fallback step labels (English). Overridden at runtime by server-rendered
+// translations passed through the `data-message-step-labels-value` attribute.
+const DEFAULT_STEP_LABELS = {
+  enriching:          "Enriching question…",
+  retrieving_context: "Retrieving context…",
+  generating_code:    "Generating query…",
+  validating:         "Validating query…",
+  executing:          "Executing on database…",
+  humanizing:         "Preparing response…",
+};
 
 export default class extends Controller {
-  static targets = ["input", "form", "submitBtn", "charCount", "runBtn", "downloadBtn", "resultsContainer", "micBtn", "mentionChips"]
-  static values  = { startUrl: String, tables: Array }
+  static targets = ["input", "form", "submitBtn", "cancelBtn", "charCount", "runBtn", "downloadBtn", "resultsContainer", "micBtn", "mentionChips", "editBtn", "processingLabel"]
+  static values  = { startUrl: String, tables: Array, stepLabels: Object, pollUrl: String, isProcessing: Boolean }
 
   connect() {
     if (this.hasInputTarget) {
+      this._setupMentionBackdrop();
       this.autoResize();
       this.updateCharCount();
       this.scrollToBottom();
@@ -23,15 +26,35 @@ export default class extends Controller {
         setTimeout(() => this._closeMentionDropdown(), 120);
       });
     }
+
+    // Processing-placeholder mode: poll the server until the job finishes.
+    if (this.hasIsProcessingValue && this.isProcessingValue) {
+      this._startPolling();
+    }
+  }
+
+  disconnect() {
+    this._stopPolling();
   }
 
   // ── Form submission ──────────────────────────────────────────────────────────
 
   handleKeydown(event) {
+    if (event.key === "Escape") {
+      const dropdown = document.getElementById("mention-dropdown");
+      if (dropdown && !dropdown.classList.contains("hidden")) return;
+      if (this._isSubmitting) { event.preventDefault(); this.cancelSubmit(); }
+      return;
+    }
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
       event.preventDefault();
+      if (this._isSubmitting) return;
       this.formTarget.requestSubmit();
     }
+  }
+
+  cancelSubmit() {
+    if (this._abortController) this._abortController.abort();
   }
 
   async submit(event) {
@@ -41,7 +64,7 @@ export default class extends Controller {
     const content = input?.value?.trim();
     if (!content) return;
 
-    // Temp chat mode: create chat + first message via /start, then Turbo.visit
+    // Temp chat mode: create chat via /start, redirect to new chat page.
     if (this.hasStartUrlValue) {
       await this._startNewSession(content);
       return;
@@ -55,41 +78,98 @@ export default class extends Controller {
     input.value = "";
     this.autoResize();
     this.updateCharCount();
+    this._updateMentionChips();
+    this._updateMentionBackdrop();
+    this._closeMentionDropdown();
 
     this.showThinking();
+    this._abortController = new AbortController();
 
     try {
+      // Server enqueues the job and returns a Turbo Stream immediately.
+      // The stream inserts a processing placeholder; polling handles the rest.
       const response = await fetch(this.formTarget.action, {
         method: "POST",
-        body: formData,
+        body:   formData,
+        signal: this._abortController.signal,
         headers: {
-          "Accept": "text/vnd.turbo-stream.html",
+          "Accept":       "text/vnd.turbo-stream.html",
           "X-CSRF-Token": this.csrfToken,
-        }
+        },
       });
 
-      const html = await response.text();
-      Turbo.renderStreamMessage(html);
-
-      // Turbo defers some DOM updates via requestAnimationFrame — wait for them
-      await new Promise(r => requestAnimationFrame(r));
-      await new Promise(r => requestAnimationFrame(r));
-
-      this.scrollToBottom();
-      await this.typewriterEffect();
-      this.highlightCode();
-
+      if (response.ok) {
+        const html = await response.text();
+        this.removeThinking();
+        Turbo.renderStreamMessage(html);
+        await new Promise(r => requestAnimationFrame(r));
+        this.scrollToBottom();
+      }
     } catch (error) {
       this.removeThinking();
       document.getElementById("temp-user-message")?.remove();
-      this.toast("Failed to send message", "error");
+      if (error.name !== "AbortError") this.toast("Failed to send message", "error");
     } finally {
       this.setSubmitting(false);
+      this._abortController = null;
     }
   }
 
+  // ── Background-job polling ───────────────────────────────────────────────────
+  // Activated on processing-placeholder elements (data-message-is-processing-value).
+  // Polls every 2 s; on completion the server returns a Turbo Stream that
+  // replaces this element with the rendered final message.
+
+  _startPolling() {
+    const labels = this.hasStepLabelsValue
+      ? Object.values(this.stepLabelsValue)
+      : Object.values(DEFAULT_STEP_LABELS);
+    let i = 0;
+    this._labelTimer = setInterval(() => {
+      if (!this.hasProcessingLabelTarget) return;
+      this.processingLabelTarget.textContent = labels[i % labels.length];
+      i++;
+    }, 1500);
+
+    this._pollTimer = setInterval(() => this._poll(), 2000);
+  }
+
+  _stopPolling() {
+    clearInterval(this._labelTimer);
+    clearInterval(this._pollTimer);
+    this._labelTimer = null;
+    this._pollTimer  = null;
+  }
+
+  async _poll() {
+    if (!this.hasPollUrlValue) return;
+    try {
+      const response = await fetch(this.pollUrlValue, {
+        headers: {
+          "Accept":       "text/vnd.turbo-stream.html",
+          "X-CSRF-Token": this.csrfToken,
+        },
+      });
+
+      if (response.status === 204) return; // still processing
+
+      if (response.ok) {
+        this._stopPolling();
+        const html = await response.text();
+        Turbo.renderStreamMessage(html);
+        // Give Turbo two frames to finish DOM updates, then animate the new element.
+        await new Promise(r => requestAnimationFrame(r));
+        await new Promise(r => requestAnimationFrame(r));
+        this.scrollToBottom();
+        await this.typewriterEffect();
+        this.highlightCode();
+        if (window.glancerUpgradeMentions) window.glancerUpgradeMentions();
+      }
+    } catch { /* network error — retry on next tick */ }
+  }
+
   _showTempUserMessage(content) {
-    const messagesEl = document.getElementById("chat-messages");
+    const messagesEl = document.getElementById("messages-list") || document.getElementById("chat-messages");
     if (!messagesEl) return;
 
     const now     = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -144,6 +224,9 @@ export default class extends Controller {
   }
 
   // ── New session (temp chat) ──────────────────────────────────────────────
+  // Uses a plain JSON POST (no SSE) — the server creates the chat and runs the
+  // full workflow synchronously, then returns the new chat_id for redirect.
+  // The thinking-indicator timer provides visual feedback during the wait.
 
   async _startNewSession(content) {
     document.getElementById("chat-empty-state")?.remove();
@@ -166,10 +249,13 @@ export default class extends Controller {
         }
       });
 
-      const { chat_id, error } = await response.json();
-      if (!chat_id) throw new Error(error || "Failed to start session");
+      const data = await response.json();
+      if (!response.ok || !data.chat_id) {
+        throw new Error(data.error || "Failed to start chat");
+      }
 
-      Turbo.visit(`/glancer/chats/${chat_id}`);
+      this.removeThinking();
+      Turbo.visit(`/glancer/chats/${data.chat_id}`);
 
     } catch (err) {
       this.removeThinking();
@@ -213,7 +299,7 @@ export default class extends Controller {
     const editorWrapper = document.getElementById(`sql-editor-wrapper-${messageId}`);
     const editorEl = document.getElementById(`sql-editor-${messageId}`);
     const isEditing = editorWrapper && !editorWrapper.classList.contains("hidden");
-    const customCode = isEditing ? editorEl?.value?.trim() : null;
+    const customCode = isEditing ? editorEl?.textContent?.trim() : null;
 
     try {
       const body = new FormData();
@@ -341,6 +427,37 @@ export default class extends Controller {
     }, { once: true });
   }
 
+  // Opens a full-screen dialog with the result table for the given message.
+  openFullscreenTable(event) {
+    const messageId = event.currentTarget.dataset.messageId;
+    const source    = document.getElementById(`results-${messageId}`);
+    const tableEl   = source?.querySelector("table");
+    if (!tableEl) return;
+
+    const dialog = document.createElement("dialog");
+    dialog.className = "glancer-fullscreen-dialog";
+    dialog.innerHTML = `
+      <div class="glancer-fullscreen-inner">
+        <div class="glancer-fullscreen-toolbar">
+          <span class="glancer-fullscreen-title">Results</span>
+          <button class="glancer-fullscreen-close" aria-label="Close">
+            <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-x"/></svg>
+          </button>
+        </div>
+        <div class="glancer-fullscreen-body">
+          ${tableEl.outerHTML}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+    dialog.showModal();
+
+    const close = () => { dialog.close(); dialog.remove(); };
+    dialog.querySelector(".glancer-fullscreen-close").addEventListener("click", close);
+    dialog.addEventListener("click", e => { if (e.target === dialog) close(); });
+    dialog.addEventListener("close", () => dialog.remove());
+  }
+
   // ── SQL editing ──────────────────────────────────────────────────────────
 
   toggleEditSql(event) {
@@ -360,19 +477,40 @@ export default class extends Controller {
       this._exitEditMode(messageId);
       this._setRunBtnText(messageId, null);
     } else {
-      editorEl.value = codeEl?.textContent?.trim() || "";
+      const code = codeEl?.textContent?.trim() || "";
+      editorEl.textContent = code;
+      this._setupCodeEditor(editorEl, messageId);
+      if (window.Prism) {
+        const lang    = editorEl.classList.contains("language-ruby") ? "ruby" : "sql";
+        const grammar = Prism.languages[lang];
+        if (grammar) editorEl.innerHTML = Prism.highlight(code, grammar, lang);
+      }
       editorWrapper.classList.remove("hidden");
       codeWrapper.classList.add("hidden");
       editorEl.focus();
-      editorEl.style.height = "auto";
-      editorEl.style.height = `${Math.max(editorEl.scrollHeight, 80)}px`;
+      // Move cursor to end
+      const range = document.createRange();
+      range.selectNodeContents(editorEl);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
       this._setRunBtnText(messageId, "save_run");
+      this._setEditBtnState(true);
     }
   }
 
   _exitEditMode(messageId) {
     document.getElementById(`sql-editor-wrapper-${messageId}`)?.classList.add("hidden");
     document.getElementById(`sql-code-wrapper-${messageId}`)?.classList.remove("hidden");
+    this._setEditBtnState(false);
+  }
+
+  _setEditBtnState(editing) {
+    if (!this.hasEditBtnTarget) return;
+    const use = this.editBtnTarget.querySelector("use");
+    if (use) use.setAttribute("href", editing ? "#icon-x" : "#icon-edit");
+    this.editBtnTarget.setAttribute("aria-label", editing ? "Cancel edit" : "Edit code");
   }
 
   _setRunBtnText(messageId, key) {
@@ -508,6 +646,7 @@ export default class extends Controller {
   handleMentionInput() {
     this._updateMentionDropdown();
     this._updateMentionChips();
+    this._updateMentionBackdrop();
   }
 
   handleMentionKeydown(event) {
@@ -608,6 +747,7 @@ export default class extends Controller {
 
     this._closeMentionDropdown();
     this._updateMentionChips();
+    this._updateMentionBackdrop();
     this.autoResize();
     this.updateCharCount();
     input.focus();
@@ -629,13 +769,127 @@ export default class extends Controller {
       return;
     }
 
+    const schemaBase = document.querySelector("meta[name='glancer-schema-path']")?.content || "/glancer/db-schema";
     chipsEl.classList.remove("hidden");
     chipsEl.innerHTML = unique.map(t =>
-      `<span class="mention-chip">
+      `<a href="${schemaBase}?table=${encodeURIComponent(t)}" target="_blank" rel="noopener" class="mention-chip">
         <svg class="w-3 h-3 opacity-60" aria-hidden="true"><use href="#icon-table"/></svg>
         ${t}
-      </span>`
+      </a>`
     ).join("");
+  }
+
+  // ── @ mention backdrop (highlights @table in the textarea) ───────────────
+
+  _setupMentionBackdrop() {
+    if (!this.hasInputTarget) return;
+    const ta = this.inputTarget;
+    const container = ta.parentElement;
+    if (!container || container.querySelector(".mention-backdrop")) return;
+
+    container.style.position = "relative";
+
+    const bd = document.createElement("div");
+    bd.className = "mention-backdrop";
+    bd.setAttribute("aria-hidden", "true");
+    container.insertBefore(bd, ta);
+
+    // Copy computed layout styles so backdrop aligns pixel-perfectly with the textarea
+    requestAnimationFrame(() => {
+      const cs = window.getComputedStyle(ta);
+      bd.style.padding       = cs.padding;
+      bd.style.fontFamily    = cs.fontFamily;
+      bd.style.fontSize      = cs.fontSize;
+      bd.style.fontWeight    = cs.fontWeight;
+      bd.style.lineHeight    = cs.lineHeight;
+      bd.style.letterSpacing = cs.letterSpacing;
+      bd.style.wordBreak     = "break-word";
+    });
+
+    ta.addEventListener("scroll", () => { bd.scrollTop = ta.scrollTop; });
+  }
+
+  _updateMentionBackdrop() {
+    if (!this.hasInputTarget) return;
+    const bd = this.inputTarget.parentElement?.querySelector(".mention-backdrop");
+    if (!bd) return;
+
+    const tables  = new Set(this._getTables());
+    const escaped = (this.inputTarget.value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    bd.innerHTML = escaped.replace(/@(\w+)/g, (match, name) =>
+      tables.has(name) ? `<mark class="mention-hl">${match}</mark>` : match
+    );
+    bd.scrollTop = this.inputTarget.scrollTop;
+  }
+
+  // ── Code editor (contenteditable + Prism live highlighting) ──────────────
+
+  _getCaretOffset(el) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return 0;
+    const range = sel.getRangeAt(0).cloneRange();
+    range.selectNodeContents(el);
+    range.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
+    return range.toString().length;
+  }
+
+  _setCaretOffset(el, offset) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    let rem = offset;
+    while ((node = walker.nextNode())) {
+      if (rem <= node.length) {
+        const range = document.createRange();
+        range.setStart(node, rem);
+        range.collapse(true);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        return;
+      }
+      rem -= node.length;
+    }
+  }
+
+  _rehighlightEditor(el) {
+    if (!window.Prism) return;
+    const lang    = el.classList.contains("language-ruby") ? "ruby" : "sql";
+    const grammar = Prism.languages[lang];
+    if (!grammar) return;
+
+    const offset = this._getCaretOffset(el);
+    el.innerHTML = Prism.highlight(el.textContent, grammar, lang);
+    this._setCaretOffset(el, offset);
+  }
+
+  _setupCodeEditor(editorEl, messageId) {
+    if (editorEl._glancerSetup) return;
+    editorEl._glancerSetup = true;
+
+    editorEl.addEventListener("input", () => this._rehighlightEditor(editorEl));
+
+    // Plain-text paste only
+    editorEl.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData("text/plain");
+      document.execCommand("insertText", false, text);
+    });
+
+    editorEl.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        e.preventDefault();
+        document.execCommand("insertText", false, "  ");
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        const mid = messageId || editorEl.id.replace("sql-editor-", "");
+        this._exitEditMode(mid);
+        this._setRunBtnText(mid, null);
+      }
+    });
   }
 
   // ── UX helpers ──────────────────────────────────────────────────────────
@@ -644,7 +898,7 @@ export default class extends Controller {
     if (!this.hasInputTarget) return;
     const el = this.inputTarget;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+    el.style.height = `${Math.min(Math.max(el.scrollHeight, 42), 200)}px`;
   }
 
   updateCharCount() {
@@ -660,10 +914,15 @@ export default class extends Controller {
   }
 
   setSubmitting(loading) {
+    this._isSubmitting = loading;
     if (this.hasSubmitBtnTarget) this.submitBtnTarget.disabled = loading;
+    if (this.hasCancelBtnTarget) this.cancelBtnTarget.classList.toggle("hidden", !loading);
   }
 
-  // ── Thinking indicator with pipeline steps ───────────────────────────────
+  // ── Thinking indicator ────────────────────────────────────────────────────
+  // Label updates are driven by real SSE status events from the server.
+  // A local timer also cycles labels so users always see progress even when
+  // the server buffers all SSE events and delivers them in one batch.
 
   showThinking() {
     this.removeThinking();
@@ -676,7 +935,7 @@ export default class extends Controller {
         <svg class="w-3.5 h-3.5 text-primary-600 dark:text-primary-400"><use href="#icon-database"/></svg>
       </div>
       <div class="flex items-center gap-2 mt-2 text-xs text-gray-400 dark:text-gray-500" role="status" aria-live="polite">
-        <span id="thinking-label">${PIPELINE_STEPS[0].label}</span>
+        <span id="thinking-label">Processing…</span>
         <span class="flex gap-0.5" aria-hidden="true">
           <span class="w-1.5 h-1.5 rounded-full bg-primary-400 dark:bg-primary-500 animate-bounce" style="animation-delay:0ms"></span>
           <span class="w-1.5 h-1.5 rounded-full bg-primary-400 dark:bg-primary-500 animate-bounce" style="animation-delay:150ms"></span>
@@ -685,28 +944,28 @@ export default class extends Controller {
       </div>
     `;
 
-    document.getElementById("chat-messages")?.appendChild(el);
+    (document.getElementById("messages-list") || document.getElementById("chat-messages"))?.appendChild(el);
     this.scrollToBottom();
-    this._startPipelineSteps();
-  }
 
-  _startPipelineSteps() {
-    let stepIdx = 0;
-
-    const advance = () => {
-      stepIdx = Math.min(stepIdx + 1, PIPELINE_STEPS.length - 1);
+    // Cycle step labels on a timer so the UI always shows progress,
+    // even when SSE events arrive buffered in a single chunk at the end.
+    const labels = this.hasStepLabelsValue
+      ? Object.values(this.stepLabelsValue)
+      : Object.values(DEFAULT_STEP_LABELS);
+    let i = 0;
+    this._thinkingTimer = setInterval(() => {
       const labelEl = document.getElementById("thinking-label");
-      if (labelEl) labelEl.textContent = PIPELINE_STEPS[stepIdx].label;
-      if (stepIdx < PIPELINE_STEPS.length - 1) {
-        this._stepTimer = setTimeout(advance, PIPELINE_STEPS[stepIdx].ms);
-      }
-    };
-
-    this._stepTimer = setTimeout(advance, PIPELINE_STEPS[0].ms);
+      if (!labelEl) { clearInterval(this._thinkingTimer); return; }
+      labelEl.textContent = labels[i % labels.length];
+      i++;
+    }, 1500);
   }
 
   removeThinking() {
-    clearTimeout(this._stepTimer);
+    if (this._thinkingTimer) {
+      clearInterval(this._thinkingTimer);
+      this._thinkingTimer = null;
+    }
     document.getElementById("thinking-indicator")?.remove();
   }
 
