@@ -90,6 +90,7 @@ GEM
     cgi (0.5.0)
     commonmarker (2.8.2-aarch64-linux)
     commonmarker (2.8.2-aarch64-linux-musl)
+    commonmarker (2.8.2-arm-linux)
     commonmarker (2.8.2-arm64-darwin)
     commonmarker (2.8.2-x86_64-darwin)
     commonmarker (2.8.2-x86_64-linux)
@@ -138,7 +139,6 @@ GEM
       net-smtp
     marcel (1.2.1)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.9)
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
@@ -158,6 +158,10 @@ GEM
     nokogiri (1.19.3-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.19.3-aarch64-linux-musl)
+      racc (~> 1.4)
+    nokogiri (1.19.3-arm-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.19.3-arm-linux-musl)
       racc (~> 1.4)
     nokogiri (1.19.3-arm64-darwin)
       racc (~> 1.4)
@@ -279,12 +283,14 @@ GEM
       json
       simplecov
     simplecov_json_formatter (0.1.4)
-    sqlite3 (1.7.3)
-      mini_portile2 (~> 2.8.0)
-    sqlite3 (1.7.3-aarch64-linux)
-    sqlite3 (1.7.3-arm64-darwin)
-    sqlite3 (1.7.3-x86_64-darwin)
-    sqlite3 (1.7.3-x86_64-linux)
+    sqlite3 (2.9.4-aarch64-linux-gnu)
+    sqlite3 (2.9.4-aarch64-linux-musl)
+    sqlite3 (2.9.4-arm-linux-gnu)
+    sqlite3 (2.9.4-arm-linux-musl)
+    sqlite3 (2.9.4-arm64-darwin)
+    sqlite3 (2.9.4-x86_64-darwin)
+    sqlite3 (2.9.4-x86_64-linux-gnu)
+    sqlite3 (2.9.4-x86_64-linux-musl)
     stimulus-rails (1.0.4)
       railties (>= 6.0.0)
     stringio (3.1.7)
@@ -306,10 +312,15 @@ GEM
     zeitwerk (2.8.1)
 
 PLATFORMS
+  aarch64-linux
   aarch64-linux-gnu
   aarch64-linux-musl
+  arm-linux
+  arm-linux-gnu
+  arm-linux-musl
   arm64-darwin
   x86_64-darwin
+  x86_64-linux
   x86_64-linux-gnu
   x86_64-linux-musl
 
@@ -323,7 +334,7 @@ DEPENDENCIES
   rubocop-rspec (~> 3.0)
   simplecov (~> 0.22)
   simplecov-json (~> 0.2)
-  sqlite3 (~> 1.7)
+  sqlite3 (>= 2.0)
 
 BUNDLED WITH
    2.6.8

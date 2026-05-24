@@ -11,7 +11,7 @@ gem "rake", "~> 13.0"
 gem "rspec", "~> 3.0"
 gem "simplecov", "~> 0.22", require: false
 gem "simplecov-json", "~> 0.2", require: false
-gem "sqlite3", "~> 1.7"
+gem "sqlite3", ">= 2.0"
 
 gem "rubocop", "~> 1.21"
 gem "rubocop-rake", "~> 0.6", require: false
