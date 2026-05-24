@@ -20,6 +20,8 @@ module Glancer
         content = File.read(schema_file)
         Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Read #{content.bytesize} bytes from schema file")
 
+        eager_load_models!
+
         chunks = split_into_chunks(content)
         Glancer::Utils::Logger.info("Indexer::SchemaIndexer", "Found #{chunks.size} table definition(s) in schema")
 
@@ -27,8 +29,9 @@ module Glancer
           table_name = extract_table_name(chunk)
           if table_name
             Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Indexed table: #{table_name}")
+            enriched = chunk + model_associations_block(table_name)
             {
-              content: chunk,
+              content: enriched,
               source_type: "schema",
               source_path: "#{schema_file}##{table_name}"
             }
@@ -41,6 +44,9 @@ module Glancer
         fk_chunk = extract_foreign_keys(content, schema_file)
         indexed_chunks << fk_chunk if fk_chunk
 
+        inflections_chunk = extract_inflections
+        indexed_chunks << inflections_chunk if inflections_chunk
+
         Glancer::Utils::Logger.info("Indexer::SchemaIndexer",
                                     "Completed schema indexing. Total indexed chunks: #{indexed_chunks.size}")
 
@@ -49,6 +55,76 @@ module Glancer
         Glancer::Utils::Logger.error("Indexer::SchemaIndexer", "Schema indexing failed: #{e.class} - #{e.message}")
         Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Backtrace:\n#{e.backtrace.join("\n")}")
         raise Glancer::Error, "Schema indexing failed: #{e.message}"
+      end
+
+      def eager_load_models!
+        Rails.application.eager_load!
+        Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Models eager-loaded for association reflection")
+      rescue StandardError => e
+        Glancer::Utils::Logger.warn("Indexer::SchemaIndexer", "Could not eager-load models: #{e.message}")
+      end
+
+      def find_model_for_table(table_name)
+        candidates = ActiveRecord::Base.descendants.select do |model|
+          !model.abstract_class? &&
+            !model.name&.start_with?("Glancer::") &&
+            model.table_name == table_name
+        end
+        return nil if candidates.empty?
+
+        candidates.find { |m| m.superclass.abstract_class? || m.superclass == ActiveRecord::Base } || candidates.first
+      rescue StandardError
+        nil
+      end
+
+      def model_associations_block(table_name)
+        model = find_model_for_table(table_name)
+        return "" unless model
+
+        assocs = model.reflect_on_all_associations
+        return "" if assocs.empty?
+
+        lines = assocs.filter_map do |assoc|
+          format_association(assoc)
+        rescue StandardError
+          nil
+        end
+        return "" if lines.empty?
+
+        "\n\n# ActiveRecord Associations (#{model.name}):\n#{lines.join("\n")}"
+      end
+
+      def format_association(assoc)
+        parts = ["  #{assoc.macro} :#{assoc.name}"]
+        opts = ["class_name: \"#{assoc.class_name}\""]
+
+        fk = assoc.foreign_key.to_s
+        opts << "foreign_key: \"#{fk}\"" if fk.present?
+        opts << "through: :#{assoc.options[:through]}" if assoc.options[:through].present?
+        opts << "polymorphic: true" if assoc.options[:polymorphic]
+        opts << "as: :#{assoc.options[:as]}" if assoc.options[:as].present?
+        opts << "source: :#{assoc.options[:source]}" if assoc.options[:source].present?
+        opts << "dependent: :#{assoc.options[:dependent]}" if assoc.options[:dependent].present?
+
+        "#{parts.join} (#{opts.join(", ")})"
+      end
+
+      def extract_inflections
+        inflections_file = Rails.root.join("config/initializers/inflections.rb")
+        return nil unless File.exist?(inflections_file)
+
+        raw = File.read(inflections_file)
+        return nil unless raw.lines.any? { |l| l.strip.match?(/\binflect\.\w/) }
+
+        Glancer::Utils::Logger.debug("Indexer::SchemaIndexer", "Found custom inflections, adding as schema chunk")
+        {
+          content: "# Custom Rails Inflections\n# These control plural/singular model name mapping.\n\n#{raw.strip}",
+          source_type: "schema",
+          source_path: inflections_file.to_s
+        }
+      rescue StandardError => e
+        Glancer::Utils::Logger.warn("Indexer::SchemaIndexer", "Could not read inflections: #{e.message}")
+        nil
       end
 
       def split_into_chunks(schema_text)
