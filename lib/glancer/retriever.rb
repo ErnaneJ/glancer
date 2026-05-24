@@ -67,14 +67,24 @@ module Glancer
         { record: record, score: weighted_score }
       end
 
-      # Filter by min_score and sort by highest relevance
-      top_matches = results
+      sorted = results.sort_by { |r| -r[:score] }
+
+      # Filter by min_score threshold
+      top_matches = sorted
                     .select { |r| r[:score] >= Glancer.configuration.min_score }
-                    .sort_by { |r| -r[:score] }
                     .first(Glancer.configuration.k)
-                    .map do |r|
+
+      # Fallback: if nothing passes the threshold, use best available results so the
+      # LLM always has some schema context rather than generating blind code.
+      if top_matches.empty? && sorted.any?
+        top_matches = sorted.first(Glancer.configuration.k)
+        Glancer::Utils::Logger.warn("Retriever",
+                                    "No results above min_score (#{Glancer.configuration.min_score}); " \
+                                    "using top #{top_matches.size} result(s) as fallback")
+      end
+
+      top_matches = top_matches.map do |r|
         r[:record].tap do |record|
-          # Attach the calculated score to the record for workflow analysis
           record.define_singleton_method(:score) { r[:score] }
         end
       end
