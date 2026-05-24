@@ -10,6 +10,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%239333ea'/%3E%3Cellipse cx='16' cy='10' rx='8' ry='3' fill='none' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M8 10v5c0 1.657 3.582 3 8 3s8-1.343 8-3v-5' fill='none' stroke='white' stroke-width='1.5'/%3E%3Cpath d='M8 15v5c0 1.657 3.582 3 8 3s8-1.343 8-3v-5' fill='none' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E">
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
+  <meta name="glancer-schema-path" content="<%= glancer.db_schema_path %>">
 
   <%# Theme: runs before CSS to prevent flash of wrong theme %>
   <script>
@@ -51,8 +52,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <%# Prism.js for SQL syntax highlighting %>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+  <%# Prism.js for SQL syntax highlighting — light theme; dark overrides are in application.css %>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css">
 
   <%= stylesheet_link_tag "glancer/application",  media: "all", "data-turbo-track": "reload" %>
   <%= stylesheet_link_tag "glancer/table",        media: "all", "data-turbo-track": "reload" %>
@@ -121,7 +122,6 @@
       <div class="px-3 py-3 border-t border-gray-100 dark:border-gray-800 flex-shrink-0 space-y-1">
         <%= link_to glancer.db_schema_path,
             class: "flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors",
-            target: "_blank",
             rel: "noopener",
             aria: { label: t("glancer.nav.schema") } do %>
           <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-table"/></svg>
@@ -203,14 +203,29 @@
   <%# Slide-out message info panel %>
   <%= render "glancer/messages/message_info", message_info: nil %>
 
-  <%# Prism.js: syntax highlighting for SQL blocks %>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js" defer></script>
-  <%# Re-run Prism after every Turbo navigation %>
+  <%# Prism.js: syntax highlighting — loaded WITHOUT defer so they execute before
+      Stimulus controllers connect (which call highlightCode on connect). %>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-ruby.min.js"></script>
   <script>
-    document.addEventListener("turbo:render", function() {
-      if (window.Prism) setTimeout(function() { Prism.highlightAll(); }, 50);
-    });
+    // Highlight on initial full-page load and every Turbo navigation
+    document.addEventListener("DOMContentLoaded", function() { Prism.highlightAll(); });
+    document.addEventListener("turbo:render", function() { Prism.highlightAll(); });
+
+    // Upgrade @mention <a> tags with the correct schema URL (href="#" at render time).
+    // Exposed on window so Stimulus controllers can call it after Turbo Stream renders.
+    window.glancerUpgradeMentions = function glancerUpgradeMentions() {
+      var base = document.querySelector("meta[name='glancer-schema-path']")?.content;
+      if (!base) return;
+      document.querySelectorAll("a.glancer-mention[data-table]").forEach(function(el) {
+        el.href = base + "?table=" + encodeURIComponent(el.dataset.table);
+        el.target = "_blank";
+        el.rel = "noopener noreferrer";
+      });
+    }
+    document.addEventListener("DOMContentLoaded", window.glancerUpgradeMentions);
+    document.addEventListener("turbo:render", window.glancerUpgradeMentions);
   </script>
 
   <%# Chart.js for query result visualizations %>

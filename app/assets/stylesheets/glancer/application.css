@@ -27,21 +27,83 @@
   text-decoration-color: rgba(192, 132, 252, 0.3);
 }
 
-/* Override Prism theme to integrate with our design */
-pre[class*="language-"] {
-  background: #1e1e2e !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
+/* ── Prism base overrides ────────────────────────────────────────────────── */
+/* Layout/font only — no background here so light/dark themes can apply.    */
+pre[class*="language-"],
+code[class*="language-"] {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace !important;
   font-size: 0.75rem !important;
   line-height: 1.6 !important;
+  text-shadow: none !important;
+}
+
+pre[class*="language-"] {
+  border-radius: 0 !important;
+  margin: 0 !important;
   white-space: pre-wrap !important;
   word-wrap: break-word !important;
 }
 
-code[class*="language-"] {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace !important;
-  font-size: 0.75rem !important;
+/* ── Dark mode: Prism token colours (GitHub dark palette) ────────────────── */
+.dark pre[class*="language-"] {
+  background: #161b22 !important;
+  color: #e6edf3 !important;
 }
+code[class*="language-"] { color: #e6edf3; }
+.dark .token.comment,
+.dark .token.prolog,
+.dark .token.doctype,
+.dark .token.cdata         { color: #8b949e; font-style: italic; }
+.dark .token.punctuation   { color: #c9d1d9; }
+.dark .token.property,
+.dark .token.tag,
+.dark .token.boolean,
+.dark .token.number,
+.dark .token.constant,
+.dark .token.symbol        { color: #79c0ff; }
+.dark .token.selector,
+.dark .token.attr-name,
+.dark .token.string,
+.dark .token.char,
+.dark .token.builtin,
+.dark .token.inserted      { color: #a5d6ff; }
+.dark .token.operator,
+.dark .token.url           { color: #e6edf3; }
+.dark .token.atrule,
+.dark .token.attr-value,
+.dark .token.keyword       { color: #ff7b72; }
+.dark .token.function,
+.dark .token.class-name    { color: #d2a8ff; }
+.dark .token.regex,
+.dark .token.important,
+.dark .token.variable      { color: #ffa657; }
+.dark .token.deleted       { color: #ffa198; }
+
+/* ── SQL code viewer: always dark (Catppuccin Mocha) ────────────────────── */
+[data-sql-block] pre[class*="language-"] {
+  background: #1e1e2e !important;
+  color: #cdd6f4 !important;
+  text-shadow: none !important;
+}
+[data-sql-block] .token.comment,
+[data-sql-block] .token.prolog    { color: #6c7086 !important; font-style: italic; }
+[data-sql-block] .token.keyword   { color: #cba6f7 !important; }
+[data-sql-block] .token.string,
+[data-sql-block] .token.char      { color: #a6e3a1 !important; }
+[data-sql-block] .token.number,
+[data-sql-block] .token.boolean   { color: #fab387 !important; }
+[data-sql-block] .token.function  { color: #89b4fa !important; }
+[data-sql-block] .token.class-name { color: #f38ba8 !important; }
+[data-sql-block] .token.operator  { color: #89dceb !important; }
+[data-sql-block] .token.punctuation { color: #9399b2 !important; }
+[data-sql-block] .token.property,
+[data-sql-block] .token.tag       { color: #f2cdcd !important; }
+[data-sql-block] .token.atrule,
+[data-sql-block] .token.attr-value { color: #f5c2e7 !important; }
+[data-sql-block] .token.variable  { color: #cdd6f4 !important; }
+[data-sql-block] .token.selector,
+[data-sql-block] .token.inserted  { color: #a6e3a1 !important; }
+[data-sql-block] .token.deleted   { color: #f38ba8 !important; }
 
 /* Inline code (not inside pre) */
 .message-content code:not(pre code) {
@@ -100,6 +162,31 @@ hr {
 }
 .user-message-prose p { margin: 0.25em 0; }
 
+/* @mention highlight in message content — purple bold, no background, real link */
+.glancer-mention {
+  display: inline;
+  background: none;
+  color: #7e22ce;
+  font-weight: 700;
+  padding: 0 0.25em;
+  border-radius: 0.2em;
+  text-decoration: none;
+}
+.glancer-mention:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.dark .glancer-mention {
+  background: none;
+  color: #c084fc;
+}
+/* Inside user purple bubble */
+.user-message-prose .glancer-mention {
+  background: none;
+  color: #f0e8ff;
+  font-weight: 700;
+}
+
 /* SQL editor textarea — matches Prism code block styling */
 .glancer-sql-editor {
   background: #1e1e2e !important;
@@ -110,22 +197,154 @@ hr {
   tab-size: 2;
 }
 
-/* @ mention chip in chat form */
+/* Code editor (contenteditable + Prism live highlighting) — always dark */
+.glancer-code-editor {
+  background: #1e1e2e !important;
+  color: #cdd6f4 !important;
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace !important;
+  font-size: 0.75rem !important;
+  line-height: 1.6 !important;
+  tab-size: 2;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  min-height: 80px;
+  outline: none;
+  caret-color: #cdd6f4;
+}
+/* Prism injects spans — preserve wrapping */
+.glancer-code-editor * {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+/* Token colours inside the editor (same Catppuccin palette as [data-sql-block]) */
+.glancer-code-editor .token.comment,
+.glancer-code-editor .token.prolog    { color: #6c7086; font-style: italic; }
+.glancer-code-editor .token.keyword   { color: #cba6f7; }
+.glancer-code-editor .token.string,
+.glancer-code-editor .token.char      { color: #a6e3a1; }
+.glancer-code-editor .token.number,
+.glancer-code-editor .token.boolean   { color: #fab387; }
+.glancer-code-editor .token.function  { color: #89b4fa; }
+.glancer-code-editor .token.class-name { color: #f38ba8; }
+.glancer-code-editor .token.operator  { color: #89dceb; }
+.glancer-code-editor .token.punctuation { color: #9399b2; }
+.glancer-code-editor .token.property,
+.glancer-code-editor .token.tag       { color: #f2cdcd; }
+.glancer-code-editor .token.variable  { color: #cdd6f4; }
+.glancer-code-editor .token.atrule,
+.glancer-code-editor .token.attr-value { color: #f5c2e7; }
+.glancer-code-editor .token.selector  { color: #a6e3a1; }
+
+/* @ mention backdrop (highlights @table tokens behind the textarea) */
+.mention-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  overflow: hidden;
+  color: transparent;
+  white-space: pre-wrap;
+  word-break: break-word;
+  z-index: 0;
+}
+.mention-backdrop mark.mention-hl {
+  background: rgba(147, 51, 234, 0.15);
+  border-radius: 0.2em;
+  color: transparent;
+}
+.dark .mention-backdrop mark.mention-hl {
+  background: rgba(192, 132, 252, 0.2);
+}
+
+/* @ mention chip in chat form — links to schema page */
 .mention-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background: rgba(147, 51, 234, 0.1);
+  background: none;
   color: #7e22ce;
-  border: 1px solid rgba(147, 51, 234, 0.25);
+  border: none;
   border-radius: 9999px;
-  padding: 0.1rem 0.5rem;
+  padding: 0.1rem 0.4rem;
   font-size: 0.7rem;
-  font-weight: 500;
-  cursor: default;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+.mention-chip:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .dark .mention-chip {
-  background: rgba(192, 132, 252, 0.12);
+  background: none;
   color: #c084fc;
-  border-color: rgba(192, 132, 252, 0.25);
+}
+
+/* ── Fullscreen table dialog ─────────────────────────────────────────────── */
+.glancer-fullscreen-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+}
+.glancer-fullscreen-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+.glancer-fullscreen-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  padding: 0;
+}
+.dark .glancer-fullscreen-inner {
+  background: #111827;
+}
+.glancer-fullscreen-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+.dark .glancer-fullscreen-toolbar {
+  border-bottom-color: #374151;
+  background: #1f2937;
+}
+.glancer-fullscreen-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.dark .glancer-fullscreen-title { color: #9ca3af; }
+.glancer-fullscreen-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  transition: background 0.15s, color 0.15s;
+}
+.glancer-fullscreen-close:hover { background: #f3f4f6; color: #111827; }
+.dark .glancer-fullscreen-close:hover { background: #374151; color: #f9fafb; }
+.glancer-fullscreen-body {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem;
 }
