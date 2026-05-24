@@ -36,7 +36,8 @@ Glancer is a **Ruby on Rails engine** that mounts a full chat interface inside y
 → SELECT executed, results shown, answer written in plain language.
 ```
 
-<video src="./.github/assets/demo.mp4" controls width="100%"></video>
+[![Click to play video](./.github/assets/demo.png)](https://github.com/ErnaneJ/glancer/raw/refs/heads/main/.github/assets/demo.mp4)
+> Click to see demo. ☝
 
 ## Why Glancer?
 
