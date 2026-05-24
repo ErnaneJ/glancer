@@ -31,9 +31,17 @@ RSpec.describe Glancer::Workflow::ARExecutor do
       expect(result).to eq([{ "result" => "hello" }])
     end
 
-    it "wraps a Hash in an array" do
-      result = described_class.normalize({ "count" => 5 })
-      expect(result).to eq([{ "count" => 5 }])
+    it "normalizes an all-numeric hash (group/count result) to one row per entry" do
+      result = described_class.normalize({ "05/2026" => 6, "04/2026" => 2 })
+      expect(result).to contain_exactly(
+        { "key" => "05/2026", "value" => 6 },
+        { "key" => "04/2026", "value" => 2 }
+      )
+    end
+
+    it "keeps a mixed-type hash as a single attribute row" do
+      result = described_class.normalize({ "name" => "Alice", "age" => 30 })
+      expect(result).to eq([{ "name" => "Alice", "age" => 30 }])
     end
 
     it "returns [] for nil" do

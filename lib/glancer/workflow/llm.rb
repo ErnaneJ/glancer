@@ -61,10 +61,10 @@ module Glancer
           This is likely a naming mismatch (e.g., the user said "afiliados" but the actual table is "filiais").
 
           Please:
-          1. Tell the user in a friendly way that the table(s) **#{missing}** could not be found in the database schema.
-          2. Suggest they check the schema viewer at `/glancer/db-schema` to see all available tables.
-          3. Ask them to rephrase the question using the correct table name.
-          4. Keep it to 2-3 sentences. Respond in the exact same language as the user's question.
+          1. Do NOT start with a greeting. Get straight to the point.
+          2. Tell the user that the table(s) **#{missing}** could not be found in the indexed schema.
+          3. Suggest they check the schema viewer at `/glancer/db-schema` to see all available tables.
+          4. Keep it to 2 sentences. Respond in the exact same language as the user's question.
         PROMPT
 
         chat = RubyLLM.chat(
@@ -109,10 +109,11 @@ module Glancer
           Last code attempted: "#{code}"
 
           Your task:
-          1. Explain to the user in a friendly way that you couldn't process the request.
-          2. Point out what might be wrong (e.g., "I couldn't find a connection between Table A and B").
-          3. Suggest how the user could rephrase the question to be clearer.
-          4. Respond in the user's language.
+          1. Do NOT start with a greeting or salutation (no "Hi", "Hello", "Olá", "Oi", etc.). Get straight to the point.
+          2. Explain briefly what went wrong and why (e.g., "The column 'status' doesn't exist in the 'pages' table").
+          3. Suggest how the user could rephrase or what alternative they can try.
+          4. Keep it concise — 2–3 sentences max.
+          5. Respond in the user's language.
         PROMPT
 
         chat.ask(prompt).content

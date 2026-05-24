@@ -44,31 +44,59 @@ module Glancer
       end
 
       def self.evaluate(code)
-        TOPLEVEL_BINDING.eval(code) # rubocop:disable Security/Eval
+        TOPLEVEL_BINDING.eval(code)
       end
 
       def self.normalize(result)
-        case result
-        when ActiveRecord::Relation
-          result.to_a.map { |r| r.respond_to?(:attributes) ? r.attributes : { "value" => r } }
-        when Array
-          result.map do |item|
-            if item.respond_to?(:attributes)
-              item.attributes
-            elsif item.is_a?(Hash)
-              item.stringify_keys
-            else
-              { "value" => item }
-            end
-          end
-        when Hash
-          [result.stringify_keys]
-        when Numeric, String
-          [{ "result" => result }]
-        when NilClass
-          []
+        rows = case result
+               when ActiveRecord::Relation
+                 result.to_a.map { |r| r.respond_to?(:attributes) ? r.attributes : { "value" => r } }
+               when Array
+                 result.map do |item|
+                   if item.respond_to?(:attributes)
+                     item.attributes
+                   elsif item.is_a?(Hash)
+                     item.stringify_keys
+                   else
+                     { "value" => item }
+                   end
+                 end
+               when Hash
+                 return normalize_hash(result.stringify_keys)
+               when Numeric, String
+                 return [{ "result" => result }]
+               when NilClass
+                 return []
+               else
+                 # Single AR model object (e.g. from .first / .find)
+                 return [{ "result" => result.inspect }] unless result.respond_to?(:attributes)
+
+                 [result.attributes]
+
+               end
+
+        drop_all_nil_columns(rows)
+      end
+
+      # Removes columns where every row has a nil value (e.g. `id` when using
+      # .select("col1, col2") — AR still populates id: nil on the model objects).
+      def self.drop_all_nil_columns(rows)
+        return rows if rows.empty?
+
+        nil_cols = rows.first.keys.select { |k| rows.all? { |r| r[k].nil? } }
+        return rows if nil_cols.empty?
+
+        rows.map { |r| r.except(*nil_cols) }
+      end
+
+      # Hashes from .group().count/sum/etc. map {group_value => aggregate} and must
+      # be rendered as rows. Hashes where values are mixed types (e.g. model
+      # attributes) are kept as a single row.
+      def self.normalize_hash(hash)
+        if hash.values.all? { |val| val.is_a?(Numeric) }
+          hash.map { |key, val| { "key" => key.to_s, "value" => val } }
         else
-          [{ "result" => result.inspect }]
+          [hash]
         end
       end
     end

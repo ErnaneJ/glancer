@@ -107,5 +107,17 @@
       noMsg.classList.toggle('hidden', visible > 0 || !term);
       if (filterTerm) filterTerm.textContent = query;
     }
+
+    // Auto-apply filter from ?table= URL param (used by @mention links)
+    (function() {
+      var params = new URLSearchParams(location.search);
+      var table = params.get('table');
+      if (table) {
+        var input = document.getElementById('table-filter');
+        if (input) { input.value = table; filterTables(table); }
+        var card = document.querySelector('[data-table="' + table + '"]');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    })();
   </script>
 <% end %>

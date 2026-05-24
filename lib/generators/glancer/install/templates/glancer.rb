@@ -33,6 +33,23 @@ Glancer.configure do |config|
   config.query_mode = :sql
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Query enrichment
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # When enabled, the user's question is rewritten by a fast LLM before retrieval.
+  # The enricher translates natural-language terms into actual table names so that
+  # the vector search and code-generation steps are more accurate. The original
+  # question is always shown to the user; the final answer is always in the user's
+  # language regardless of what language the enriched question was generated in.
+  config.query_enrichment_enabled = false
+
+  # Provider and model for the enrichment step. Use a cheap, fast model here
+  # (e.g. gemini-2.0-flash, gpt-4o-mini) — it only translates terminology.
+  # When nil, falls back to llm_provider / llm_model.
+  # config.enrichment_provider = :gemini
+  # config.enrichment_model    = "gemini-2.0-flash"
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # LLM — Default provider (fallback for all roles below)
   # ─────────────────────────────────────────────────────────────────────────────
 
@@ -41,9 +58,9 @@ Glancer.configure do |config|
   config.llm_provider = :gemini
 
   # Default model. Used when role-specific models are nil.
-  #   Gemini:     "gemini-2.0-flash", "gemini-1.5-pro", ...
-  #   OpenAI:     "gpt-4o", "gpt-4o-mini", ...
-  #   OpenRouter: "anthropic/claude-3.5-sonnet", "openai/gpt-4o", ...
+  #   Gemini:     'gemini-2.0-flash', 'gemini-1.5-pro', ...
+  #   OpenAI:     'gpt-4o', 'gpt-4o-mini', ...
+  #   OpenRouter: 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o', ...
   config.llm_model = "gemini-2.0-flash"
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -82,16 +99,16 @@ Glancer.configure do |config|
   #   OpenRouter does not expose a native embedding API. If you use OpenRouter
   #   for chat/code generation, set embedding_provider to :gemini or :openai to
   #   avoid errors. If you must use an OpenRouter embedding model anyway, set
-  #   embedding_model explicitly (e.g., "openai/text-embedding-3-small") —
+  #   embedding_model explicitly (e.g., 'openai/text-embedding-3-small') —
   #   Glancer will bypass the model registry check automatically.
   #
   # Accepted: nil | :gemini | :openai | :openrouter
   config.embedding_provider = nil
 
   # Embedding model override. When nil, Glancer uses the provider default:
-  #   Gemini:     "text-embedding-004"
-  #   OpenAI:     "text-embedding-3-large"
-  #   OpenRouter: "openai/text-embedding-3-small"  (must be passed as model ID)
+  #   Gemini:     'text-embedding-004'
+  #   OpenAI:     'text-embedding-3-large'
+  #   OpenRouter: 'openai/text-embedding-3-small'  (must be passed as model ID)
   config.embedding_model = nil
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -100,31 +117,31 @@ Glancer.configure do |config|
 
   # Use provider-specific keys (preferred) or api_key as a generic fallback.
   config.gemini_api_key = ENV.fetch("GEMINI_API_KEY", nil)
-  # config.openai_api_key     = ENV.fetch("OPENAI_API_KEY", nil)
-  # config.openrouter_api_key = ENV.fetch("OPENROUTER_API_KEY", nil)
-  # config.api_key            = ENV.fetch("LLM_API_KEY", nil)  # generic fallback for any provider
+  # config.openai_api_key     = ENV.fetch('OPENAI_API_KEY', nil)
+  # config.openrouter_api_key = ENV.fetch('OPENROUTER_API_KEY', nil)
+  # config.api_key            = ENV.fetch('LLM_API_KEY', nil)  # generic fallback for any provider
 
   # ─── Example: different providers per role ──────────────────────────────────
   # config.llm_provider       = :gemini                              # default fallback
-  # config.llm_model          = "gemini-2.0-flash"
+  # config.llm_model          = 'gemini-2.0-flash'
   # config.code_provider       = :openai                              # code-focused model for queries
-  # config.code_model          = "gpt-4o"
+  # config.code_model          = 'gpt-4o'
   # config.chat_provider      = :gemini                              # cheaper for chat
-  # config.chat_model         = "gemini-2.0-flash"
+  # config.chat_model         = 'gemini-2.0-flash'
   # config.embedding_provider = :gemini                              # dedicated embeddings
-  # config.embedding_model    = "text-embedding-004"
-  # config.gemini_api_key     = ENV.fetch("GEMINI_API_KEY", nil)
-  # config.openai_api_key     = ENV.fetch("OPENAI_API_KEY", nil)
+  # config.embedding_model    = 'text-embedding-004'
+  # config.gemini_api_key     = ENV.fetch('GEMINI_API_KEY', nil)
+  # config.openai_api_key     = ENV.fetch('OPENAI_API_KEY', nil)
   # ─── Example: OpenRouter for chat/code gen, Gemini for embeddings (recommended) ──
   # OpenRouter does not expose a native embedding API, so always pair it with
   # a dedicated embedding provider (:gemini or :openai).
   # config.llm_provider       = :openrouter
-  # config.openrouter_api_key = ENV.fetch("OPENROUTER_API_KEY", nil)
-  # config.llm_model          = "anthropic/claude-3.5-sonnet"
-  # config.code_model          = "deepseek/deepseek-r1:free"
+  # config.openrouter_api_key = ENV.fetch('OPENROUTER_API_KEY', nil)
+  # config.llm_model          = 'anthropic/claude-3.5-sonnet'
+  # config.code_model          = 'deepseek/deepseek-r1:free'
   # config.embedding_provider = :gemini
-  # config.gemini_api_key     = ENV.fetch("GEMINI_API_KEY", nil)
-  # config.embedding_model    = "text-embedding-004"
+  # config.gemini_api_key     = ENV.fetch('GEMINI_API_KEY', nil)
+  # config.embedding_model    = 'text-embedding-004'
   # ───────────────────────────────────────────────────────────────────────────
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -138,7 +155,7 @@ Glancer.configure do |config|
   config.models_permission = false
 
   # Path to a Markdown file with domain context: business rules, table aliases,
-  # common query patterns, etc. Add "--glancer-ignore" as the first line to skip.
+  # common query patterns, etc. Add '--glancer-ignore' as the first line to skip.
   config.context_file_path = "config/glancer/llm_context.glancer.md"
 
   # ─────────────────────────────────────────────────────────────────────────────
@@ -191,7 +208,7 @@ Glancer.configure do |config|
   # ─────────────────────────────────────────────────────────────────────────────
 
   # File path for Glancer logs. When nil, output goes to Rails.logger / STDOUT.
-  config.log_output_path = nil # e.g. "log/glancer.log"
+  config.log_output_path = nil # e.g. 'log/glancer.log'
 
   # Log verbosity level.
   # :none  → silent
@@ -203,8 +220,8 @@ Glancer.configure do |config|
   # Integrations
   # ─────────────────────────────────────────────────────────────────────────────
 
-  # Blazer integration: enables an "Open in Blazer" button on generated queries.
-  # Auto-detected if the blazer gem is installed (defaults to "/blazer").
-  # Set explicitly to override the path, or to "" / nil to disable.
-  # config.blazer_path = "/blazer"
+  # Blazer integration: enables an 'Open in Blazer' button on generated queries.
+  # Auto-detected if the blazer gem is installed (defaults to '/blazer').
+  # Set explicitly to override the path, or to '' / nil to disable.
+  # config.blazer_path = '/blazer'
 end

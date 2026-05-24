@@ -36,6 +36,19 @@
             </div>
           <% end %>
 
+          <%# Enriched question (only when enrichment is enabled and produced a different result) %>
+          <% if message_info.enriched_question.present? %>
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500"><%= t("glancer.info_panel.enriched_question") %></p>
+                <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400">enriched</span>
+              </div>
+              <div class="rounded-xl bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-600 dark:text-gray-300 italic">
+                <%= message_info.enriched_question %>
+              </div>
+            </div>
+          <% end %>
+
           <%# Generated code (SQL or ActiveRecord) %>
           <% if message_info.code.present? %>
             <% code_lang  = message_info.code_type == "activerecord" ? "ruby" : "sql" %>

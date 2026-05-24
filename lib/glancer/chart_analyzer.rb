@@ -34,16 +34,14 @@ module Glancer
       if date_col && measure_cols.any? && !group_col && data.size <= MAX_LINE_POINTS
         filled = fill_monthly_gaps(data, date_col, measure_cols)
         charts << build_line(filled, date_col, measure_cols)
+        charts << build_bar(filled, date_col, measure_cols)
       end
 
       if !date_col && !group_col && label_col && measure_cols.any?
         unique_labels = data.map { |r| r[label_col] }.uniq.size
         if unique_labels <= MAX_BAR_CATEGORIES
-          charts << if measure_cols.size == 1 && unique_labels <= MAX_PIE_CATEGORIES
-                      build_doughnut(data, label_col, measure_cols.first)
-                    else
-                      build_bar(data, label_col, measure_cols)
-                    end
+          charts << build_bar(data, label_col, measure_cols)
+          charts << build_doughnut(data, label_col, measure_cols.first) if measure_cols.size == 1 && unique_labels <= MAX_PIE_CATEGORIES
         end
       end
 

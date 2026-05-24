@@ -1,61 +1,93 @@
-<%# Compute indexed table names for @ autocomplete %>
+<%# Compute indexed table names for @ autocomplete.
+    Only paths with "#" are real table entries (e.g. "schema.rb#users").
+    Paths without "#" are auxiliary chunks (inflections file, etc.). %>
 <% glancer_tables = begin
      Glancer::Embedding.where(source_type: "schema")
                        .pluck(:source_path)
-                       .filter_map { |p| n = p.split("#").last; n unless n == "foreign_keys" }
+                       .filter_map do |p|
+                         next unless p.include?("#")
+                         n = p.split("#").last
+                         n unless n == "foreign_keys"
+                       end
                        .uniq.sort
    rescue StandardError
      []
    end %>
 
-<%= form_with model: [chat, Glancer::Message.new],
-              url: glancer.chat_messages_path(chat),
-              data: {
-                controller: "message",
-                action: "submit->message#submit",
-                message_target: "form",
-                message_tables_value: glancer_tables.to_json
-              } do |f| %>
-  <div class="relative">
-    <%# @ mention autocomplete dropdown — shown above the form when @ is typed %>
-    <div id="mention-dropdown" class="hidden absolute left-0 right-0 bottom-full mb-1 max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 text-sm" role="listbox" aria-label="Table suggestions"></div>
+<div id="message-form" class="max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl mx-auto">
+  <%= form_with model: [chat, Glancer::Message.new],
+                url: glancer.chat_messages_path(chat),
+                data: {
+                  controller: "message",
+                  action: "submit->message#submit",
+                  message_target: "form",
+                  message_tables_value: glancer_tables.to_json,
+                  message_step_labels_value: {
+                    enriching:          t("glancer.workflow_steps.enriching"),
+                    retrieving_context: t("glancer.workflow_steps.retrieving_context"),
+                    generating_code:    t("glancer.workflow_steps.generating_code"),
+                    validating:         t("glancer.workflow_steps.validating"),
+                    executing:          t("glancer.workflow_steps.executing"),
+                    humanizing:         t("glancer.workflow_steps.humanizing")
+                  }.to_json
+                } do |f| %>
+    <div class="relative">
+      <%# @ mention autocomplete dropdown — shown above the form when @ is typed %>
+      <div id="mention-dropdown" class="hidden absolute left-0 right-0 bottom-full mb-1 max-h-52 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 text-sm" role="listbox" aria-label="Table suggestions"></div>
 
-    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent transition-shadow">
-      <%= f.text_area :content,
-          rows: 1,
-          maxlength: 2000,
-          placeholder: t("glancer.chat.placeholder"),
-          class: "block w-full px-4 pt-3.5 pb-2 bg-transparent resize-none outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 min-h-[42px] max-h-[200px]",
-          data: {
-            message_target: "input",
-            action: "keydown->message#handleKeydown input->message#autoResize input->message#updateCharCount input->message#handleMentionInput keydown->message#handleMentionKeydown"
-          },
-          aria: { label: t("glancer.chat.placeholder"), autocomplete: "off" } %>
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-transparent transition-shadow">
+        <%= f.text_area :content,
+            rows: 1,
+            maxlength: 2000,
+            placeholder: t("glancer.chat.placeholder"),
+            class: "block w-full px-4 pt-3.5 pb-2 bg-transparent resize-none outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 min-h-[42px] max-h-[200px] relative z-10",
+            data: {
+              message_target: "input",
+              action: "keydown->message#handleKeydown input->message#autoResize input->message#updateCharCount input->message#handleMentionInput keydown->message#handleMentionKeydown"
+            },
+            aria: { label: t("glancer.chat.placeholder"), autocomplete: "off" } %>
 
-      <%# @ mention chips — shown when @tablename is detected in input %>
-      <div id="mention-chips" class="hidden px-3 pb-1.5 flex flex-wrap gap-1.5" data-message-target="mentionChips" aria-label="Referenced tables"></div>
+        <%# @ mention chips — shown when @tablename is detected in input %>
+        <div id="mention-chips" class="hidden px-3 pb-1.5 flex flex-wrap gap-1.5" data-message-target="mentionChips" aria-label="Referenced tables"></div>
 
-      <div class="flex items-center justify-between px-3 pb-2.5">
-        <span class="text-[11px] text-gray-300 dark:text-gray-600 select-none" data-message-target="charCount" aria-live="polite">0 / 2000</span>
-        <div class="flex items-center gap-2">
-          <span class="hidden sm:block text-[11px] text-gray-300 dark:text-gray-600 select-none"><%= t("glancer.chat.hint") %></span>
-          <%# Microphone button %>
-          <button type="button"
-                  class="flex items-center justify-center w-8 h-8 rounded-xl text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950 transition-colors"
-                  data-message-target="micBtn"
-                  data-action="click->message#toggleRecording"
-                  aria-label="<%= t('glancer.chat.record') %>">
-            <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-mic"/></svg>
-          </button>
-          <%# Send button %>
-          <button type="submit"
-                  class="flex items-center justify-center w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
-                  data-message-target="submitBtn"
-                  aria-label="<%= t('glancer.chat.send') %>">
-            <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-send"/></svg>
-          </button>
+        <div class="flex items-center justify-between px-3 pb-2.5">
+          <div class="flex items-center gap-3">
+            <span class="text-[11px] text-gray-300 dark:text-gray-600 select-none" data-message-target="charCount" aria-live="polite">0 / 2000</span>
+            <% if glancer_tables.any? %>
+              <span class="hidden sm:inline-flex items-center gap-1 text-[11px] text-gray-300 dark:text-gray-600 select-none" title="<%= t('glancer.chat.mention_tip_title') %>">
+                <kbd class="inline-flex items-center px-1 py-px rounded border border-gray-200 dark:border-gray-700 font-mono text-[10px] leading-none text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800">@</kbd>
+                <%= t("glancer.chat.mention_tip") %>
+              </span>
+            <% end %>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="hidden sm:block text-[11px] text-gray-300 dark:text-gray-600 select-none"><%= t("glancer.chat.hint") %></span>
+            <%# Microphone button %>
+            <button type="button"
+                    class="flex items-center justify-center w-8 h-8 rounded-xl text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950 transition-colors"
+                    data-message-target="micBtn"
+                    data-action="click->message#toggleRecording"
+                    aria-label="<%= t('glancer.chat.record') %>">
+              <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-mic"/></svg>
+            </button>
+            <%# Cancel button — visible only while processing %>
+            <button type="button"
+                    class="hidden flex items-center justify-center w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-950 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                    data-message-target="cancelBtn"
+                    data-action="click->message#cancelSubmit"
+                    aria-label="Cancel">
+              <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-x"/></svg>
+            </button>
+            <%# Send button %>
+            <button type="submit"
+                    class="flex items-center justify-center w-8 h-8 rounded-xl bg-primary-600 hover:bg-primary-700 active:bg-primary-800 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+                    data-message-target="submitBtn"
+                    aria-label="<%= t('glancer.chat.send') %>">
+              <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-send"/></svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-<% end %>
+  <% end %>
+</div>

@@ -159,6 +159,29 @@
               </span>
             </div>
 
+            <%# Query Enrichment %>
+            <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">LLM — query enrichment</span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">query_enrichment_enabled</span>
+              <span class="<%= cfg.query_enrichment_enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400' %> text-xs font-medium">
+                <%= cfg.query_enrichment_enabled ? "enabled" : "disabled" %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">enrichment_provider</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.enrichment_provider || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_provider} (default)</span>).html_safe %>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 px-4 py-2.5 items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">enrichment_model</span>
+              <span class="text-xs font-medium text-gray-800 dark:text-gray-200">
+                <%= cfg.enrichment_model || %(<span class="text-gray-400 dark:text-gray-600 italic">#{cfg.llm_model} (default)</span>).html_safe %>
+              </span>
+            </div>
+
             <%# Database %>
             <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/60">
               <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Database</span>
