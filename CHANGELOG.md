@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-24
+
+### Added
+
+- **ActiveRecord mode**: new `query_mode: :activerecord` option generates and executes
+  Ruby/ActiveRecord expressions instead of raw SQL, with its own sanitizer, extractor,
+  prompt builder, and executor (`ARSanitizer`, `ARExtractor`, `ARPromptBuilder`,
+  `ARExecutor`).
+- **Async message processing** via `Glancer::AsyncRunner`: messages are processed in a
+  background thread using `connection_pool.with_connection`, removing any dependency on
+  the host app's Active Job queue adapter (Sidekiq, GoodJob, etc.).
+- **Client-side polling**: the UI polls `/messages/:id/poll` every 2 s and replaces the
+  message partial via Turbo Stream once processing completes; a 5-minute hard timeout
+  marks stuck messages as failed automatically.
+- **Query enrichment**: new `QueryEnricher` translates natural-language questions into
+  dense technical specifications before retrieval, improving SQL/AR code accuracy.
+- **100% line coverage**: 717 RSpec examples covering every workflow path, edge case,
+  and rescue branch across all modules.
+
+### Fixed
+
+- Bar chart first element rendered as zero when `beginAtZero: false` caused Chart.js
+  to set the Y-axis minimum to the data minimum, making the lowest bar invisible.
+  Now `beginAtZero` is enabled only for bar charts.
+- Messages stuck in `processing` state forever when the host app's job queue adapter
+  was not running (replaced `perform_later` with direct thread execution).
+
+### Changed
+
+- Upgraded `sqlite3` dependency to `>= 2.0` for Ruby 4.0+ compatibility.
+- Responsive chart grid layout: charts are displayed in a 2-column grid on medium+
+  screens with individual fullscreen buttons.
+
 ## [1.0.0] — 2026-05-15
 
 ### Added
@@ -83,6 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `config.history_limit` to control how many prior turns are included in the prompt.
 - `config.read_only_db` to route queries to a replica connection string.
 
-[Unreleased]: https://github.com/ErnaneJ/glancer/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/ErnaneJ/glancer/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/ErnaneJ/glancer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/ErnaneJ/glancer/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/ErnaneJ/glancer/releases/tag/v0.1.0
