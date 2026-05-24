@@ -162,5 +162,14 @@ RSpec.describe Glancer::Workflow::ARSanitizer do
           .to raise_error(Glancer::Error, /load/)
       end
     end
+
+    context "when an unexpected StandardError occurs during sanitization" do
+      it "wraps the error in Glancer::Error" do
+        allow(described_class).to receive(:ensure_safe!).and_call_original
+        allow_any_instance_of(String).to receive(:match?).and_raise(StandardError, "regex engine failure")
+        expect { described_class.ensure_safe!("User.count") }
+          .to raise_error(Glancer::Error, /AR sanitization failed/)
+      end
+    end
   end
 end

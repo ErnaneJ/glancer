@@ -40,5 +40,11 @@ RSpec.describe Glancer::Workflow::ARExtractor do
       # normal path; just verify it doesn't raise on valid input
       expect { described_class.extract("User.count") }.not_to raise_error
     end
+
+    it "raises Glancer::Error wrapping an unexpected StandardError" do
+      allow(Glancer::Utils::Logger).to receive(:info).and_raise(StandardError, "unexpected")
+      expect { described_class.extract("User.count") }
+        .to raise_error(Glancer::Error, /AR code extraction failed/)
+    end
   end
 end

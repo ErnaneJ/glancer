@@ -118,6 +118,13 @@ RSpec.describe Glancer::Retriever do
       # Score for a perfect match should be ~1.3 (1.0 cosine * 1.3 weight)
       expect(schema_result.score).to be_within(0.01).of(1.3)
     end
+
+    it "falls back to top-k results when no embedding exceeds min_score" do
+      Glancer.configuration.min_score = 0.99
+      # Query vector orthogonal to both stored embeddings → cosine similarity ≈ 0
+      results = described_class.perform_ruby_search([0.0, 0.0, 1.0])
+      expect(results).not_to be_empty
+    end
   end
 
   # ── cosine_similarity ─────────────────────────────────────────────────────

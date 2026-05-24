@@ -65,6 +65,56 @@ RSpec.describe Glancer::Workflow::QueryEnricher do
       result = described_class.enrich(question, table_names)
       expect(result).to eq("enriched question")
     end
+
+    it "includes assistant messages with code in the history block sent to the LLM" do
+      chat_obj = Glancer::Chat.create!(title: "T")
+      msg = Glancer::Message.create!(
+        chat: chat_obj, role: :assistant, content: "Found 3.",
+        code: "User.count", code_type: "activerecord"
+      )
+      expect(fake_chat).to receive(:ask) do |prompt|
+        expect(prompt).to include("ASSISTANT")
+        expect(prompt).to include("User.count")
+        fake_response
+      end
+      described_class.enrich(question, table_names, history: [msg])
+    end
+
+    it "includes non-code messages in the history block without code format" do
+      chat_obj = Glancer::Chat.create!(title: "T")
+      msg = Glancer::Message.create!(chat: chat_obj, role: :user, content: "What is the count?")
+      expect(fake_chat).to receive(:ask) do |prompt|
+        expect(prompt).to include("USER: What is the count?")
+        fake_response
+      end
+      described_class.enrich(question, table_names, history: [msg])
+    end
+
+    it "includes referenced schema context in prompt when question has @mentioned tables" do
+      Glancer::Embedding.create!(
+        content: "create_table orders ...", embedding: [],
+        source_type: "schema", source_path: "/db/schema.rb#orders"
+      )
+      expect(fake_chat).to receive(:ask) do |prompt|
+        expect(prompt).to include("Referenced Schema")
+        fake_response
+      end
+      described_class.enrich("How many @orders?", ["orders"])
+    end
+
+    it "continues normally when schema context lookup raises (rescue path)" do
+      allow(Glancer::Embedding).to receive(:where).and_raise(StandardError, "db error")
+      result = described_class.enrich("count @orders", ["orders"])
+      expect(result).to be_a(String)
+    end
+
+    it "omits referenced schema block when @mention does not match any table" do
+      expect(fake_chat).to receive(:ask) do |prompt|
+        expect(prompt).not_to include("Referenced Schema")
+        fake_response
+      end
+      described_class.enrich("How many @ghost records?", table_names)
+    end
   end
 
   # ── .known_table_names ────────────────────────────────────────────────────

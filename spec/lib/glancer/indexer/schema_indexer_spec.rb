@@ -300,6 +300,16 @@ RSpec.describe Glancer::Indexer::SchemaIndexer do
       result = described_class.format_association(assoc)
       expect(result).to include("dependent: :destroy")
     end
+
+    it "silently skips an association that raises during formatting" do
+      bad_assoc = double("assoc")
+      allow(bad_assoc).to receive(:macro).and_raise(StandardError, "broken")
+      good_assoc = make_assoc(macro: :has_many, name: :orders, class_name: "Order", foreign_key: "user_id")
+      model = double("Model", name: "User", reflect_on_all_associations: [bad_assoc, good_assoc])
+      allow(described_class).to receive(:find_model_for_table).and_return(model)
+      result = described_class.model_associations_block("users")
+      expect(result).to include("has_many :orders")
+    end
   end
 
   # ── extract_inflections ───────────────────────────────────────────────────

@@ -39,6 +39,34 @@ RSpec.describe Glancer::Utils::MarkdownHelper do
     end
   end
 
+  describe ".highlight_mentions" do
+    it "leaves content inside fenced code blocks untouched" do
+      text = "```\n@users table here\n```"
+      result = described_class.highlight_mentions(text)
+      expect(result).to include("@users")
+      expect(result).not_to include("glancer-mention")
+    end
+
+    it "skips @mention when valid_set is provided and mention is not in it" do
+      result = described_class.highlight_mentions("check @unknown table", valid_tables: %w[users orders])
+      expect(result).to include("@unknown")
+      expect(result).not_to include("glancer-mention")
+    end
+
+    it "wraps a valid @mention in a link without schema_base" do
+      result = described_class.highlight_mentions("check @users table", valid_tables: %w[users])
+      expect(result).to include('class="glancer-mention"')
+      expect(result).to include("@users")
+      expect(result).to include('href="#"')
+    end
+
+    it "wraps a valid @mention in a link with schema_base" do
+      result = described_class.highlight_mentions("see @orders", schema_base: "/glancer", valid_tables: %w[orders])
+      expect(result).to include('href="/glancer?table=orders"')
+      expect(result).to include('target="_blank"')
+    end
+  end
+
   describe ".extract_sql_from_markdown" do
     it "extracts SQL from a ```sql...``` fenced block" do
       markdown = "Some text\n```sql\nSELECT 1\n```\nMore text"

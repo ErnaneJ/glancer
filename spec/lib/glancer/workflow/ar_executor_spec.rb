@@ -57,6 +57,32 @@ RSpec.describe Glancer::Workflow::ARExecutor do
       result = described_class.normalize([{ count: 3 }])
       expect(result.first).to include("count" => 3)
     end
+
+    it "wraps an unknown object (no attributes) in a result/inspect hash" do
+      obj = Object.new
+      result = described_class.normalize(obj)
+      expect(result).to eq([{ "result" => obj.inspect }])
+    end
+
+    it "returns a single-row attribute hash for an AR object with respond_to?(:attributes)" do
+      chat = Glancer::Chat.create!(title: "Single")
+      result = described_class.normalize(chat)
+      expect(result).to be_an(Array)
+      expect(result.first).to include("title" => "Single")
+    end
+
+    it "drops columns where every row has nil value" do
+      rows = [{ "name" => "Alice", "phantom" => nil }, { "name" => "Bob", "phantom" => nil }]
+      result = described_class.drop_all_nil_columns(rows)
+      expect(result.first.keys).not_to include("phantom")
+      expect(result.first).to include("name" => "Alice")
+    end
+
+    it "keeps columns where at least one row has a non-nil value" do
+      rows = [{ "name" => "Alice", "age" => nil }, { "name" => "Bob", "age" => 30 }]
+      result = described_class.drop_all_nil_columns(rows)
+      expect(result.first.keys).to include("age")
+    end
   end
 
   # ── execute ───────────────────────────────────────────────────────────────

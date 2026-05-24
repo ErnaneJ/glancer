@@ -112,6 +112,63 @@ RSpec.describe Glancer::Workflow::Builder do
     end
   end
 
+  # ── .build_ar_code ────────────────────────────────────────────────────────
+
+  describe ".build_ar_code" do
+    let(:ar_response) { double("Response", content: "```ruby\nUser.count\n```") }
+    let(:ar_chat) do
+      double("Chat").tap { |c| allow(c).to receive(:ask).and_return(ar_response) }
+    end
+
+    before { allow(RubyLLM).to receive(:chat).and_return(ar_chat) }
+
+    it "returns the AR code content from the LLM response" do
+      result = described_class.build_ar_code("count users", [])
+      expect(result).to eq("```ruby\nUser.count\n```")
+    end
+
+    it "calls RubyLLM.chat with the configured code provider and model" do
+      expect(RubyLLM).to receive(:chat).with(
+        hash_including(provider: Glancer.configuration.resolved_code_provider,
+                       model: Glancer.configuration.resolved_code_model)
+      ).and_return(ar_chat)
+      described_class.build_ar_code("count users", [])
+    end
+
+    it "raises Glancer::Error when the LLM call fails" do
+      allow(RubyLLM).to receive(:chat).and_raise(StandardError, "timeout")
+      expect { described_class.build_ar_code("count users", []) }
+        .to raise_error(Glancer::Error, /AR code generation failed/)
+    end
+  end
+
+  # ── .fix_ar_code ──────────────────────────────────────────────────────────
+
+  describe ".fix_ar_code" do
+    let(:fixed_ar_response) { double("Response", content: "```ruby\nGlancer::Chat.count\n```") }
+    let(:fix_ar_chat) do
+      double("Chat").tap { |c| allow(c).to receive(:ask).and_return(fixed_ar_response) }
+    end
+
+    before { allow(RubyLLM).to receive(:chat).and_return(fix_ar_chat) }
+
+    it "returns the extracted AR code from the LLM correction" do
+      result = described_class.fix_ar_code("BadModel.all", "uninitialized constant")
+      expect(result).to eq("Glancer::Chat.count")
+    end
+
+    it "calls RubyLLM.chat to get the correction" do
+      expect(RubyLLM).to receive(:chat).and_return(fix_ar_chat)
+      described_class.fix_ar_code("BadModel.all", "uninitialized constant")
+    end
+
+    it "raises Glancer::Error when the LLM call fails" do
+      allow(RubyLLM).to receive(:chat).and_raise(StandardError, "LLM down")
+      expect { described_class.fix_ar_code("BadModel.all", "error") }
+        .to raise_error(Glancer::Error, /AR code correction failed/)
+    end
+  end
+
   # ── .fix_sql ─────────────────────────────────────────────────────────────
 
   describe ".fix_sql" do

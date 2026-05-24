@@ -232,4 +232,77 @@ RSpec.describe Glancer::Workflow do
       expect { described_class.run(999_999, question) }.to raise_error(Glancer::Error)
     end
   end
+
+  # ── ActiveRecord mode ─────────────────────────────────────────────────────
+
+  describe ".run — activerecord pipeline" do
+    let(:ar_code) { "Glancer::Chat.count" }
+
+    before do
+      Glancer::Workflow::Cache.clear
+      Glancer.configuration.query_mode = :activerecord
+
+      allow(Glancer::Retriever).to receive(:search).and_return([embedding])
+      allow(Glancer::Workflow::Builder).to receive(:build_ar_code).and_return("```ruby\n#{ar_code}\n```")
+      allow(Glancer::Workflow::ARExecutor).to receive(:execute).and_return([{ "result" => 0 }])
+      allow(Glancer::Workflow::LLM).to receive(:humanized_response).and_return("Zero chats.")
+    end
+
+    after { Glancer.configuration.query_mode = :sql }
+
+    it "returns :successful true" do
+      result = described_class.run(chat.id, question)
+      expect(result[:successful]).to be(true)
+    end
+
+    it "returns code_type 'activerecord'" do
+      result = described_class.run(chat.id, question)
+      expect(result[:code_type]).to eq("activerecord")
+    end
+
+    it "returns the humanized content" do
+      result = described_class.run(chat.id, question)
+      expect(result[:content]).to eq("Zero chats.")
+    end
+
+    it "returns :successful false and explanation when AR executor reports an error" do
+      allow(Glancer::Workflow::ARExecutor).to receive(:execute).and_return(
+        { error: true, message: "undefined constant", last_code: ar_code }
+      )
+      allow(Glancer::Workflow::LLM).to receive(:explain_error).and_return("I couldn't fix it.")
+      result = described_class.run(chat.id, question)
+      expect(result[:successful]).to be(false)
+      expect(result[:content]).to eq("I couldn't fix it.")
+    end
+  end
+
+  # ── enrich_question ───────────────────────────────────────────────────────
+
+  describe ".run — question enrichment enabled" do
+    before do
+      Glancer::Workflow::Cache.clear
+      Glancer.configuration.query_enrichment_enabled = true
+
+      allow(Glancer::Retriever).to receive(:search).and_return([embedding])
+      allow(Glancer::Workflow::Builder).to receive(:build_sql).and_return("```sql\n#{sql}\n```")
+      allow(Glancer::Workflow::SQLValidator).to receive(:validate_tables_exist!)
+      allow(Glancer::Workflow::Executor).to receive(:execute).and_return([{ "cnt" => 42 }])
+      allow(Glancer::Workflow::LLM).to receive(:humanized_response).and_return("42 users.")
+      allow(Glancer::Workflow::QueryEnricher).to receive(:known_table_names).and_return(["users"])
+      allow(Glancer::Workflow::QueryEnricher).to receive(:enrich).and_return("enriched: #{question}")
+    end
+
+    after { Glancer.configuration.query_enrichment_enabled = false }
+
+    it "stores enriched_question in the result" do
+      result = described_class.run(chat.id, question)
+      expect(result[:enriched_question]).to eq("enriched: #{question}")
+    end
+
+    it "falls back to the original question when enrichment raises" do
+      allow(Glancer::Workflow::QueryEnricher).to receive(:enrich).and_raise(StandardError, "LLM timeout")
+      result = described_class.run(chat.id, question)
+      expect(result[:enriched_question]).to eq(question)
+    end
+  end
 end
