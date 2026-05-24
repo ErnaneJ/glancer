@@ -7,6 +7,9 @@
 /spec/reports/
 /tmp/
 
+# Built gems
+*.gem
+
 # RSpec failure tracking
 .rspec_status
 
