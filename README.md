@@ -14,7 +14,7 @@
     <img src="https://github.com/ErnaneJ/glancer/raw/refs/heads/badge-generator/.github/badges/coverage.svg" alt="Coverage">
   </a>
   <a href="https://rubygems.org/gems/glancer">
-    <img src="https://badge.fury.io/rb/glancer.svg?rnd=123" alt="Gem Version">
+    <img src="https://badge.fury.io/rb/glancer.svg" alt="Gem Version">
   </a>
   <a href="LICENSE.txt">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT">
