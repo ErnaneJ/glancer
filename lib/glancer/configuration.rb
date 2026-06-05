@@ -52,6 +52,8 @@ module Glancer
       self.query_enrichment_enabled = false # enrich question with table names before retrieval
       self.enrichment_provider = nil        # nil → falls back to llm_provider
       self.enrichment_model = nil           # nil → falls back to llm_model
+      self.max_llm_retries = 3             # retries on rate-limit errors
+      self.llm_retry_delay = 60            # base delay in seconds (fallback when no retry-after hint)
     end
 
     # === READERS ===
@@ -66,7 +68,8 @@ module Glancer
                 :code_provider, :code_model,
                 :chat_provider, :chat_model,
                 :blazer_path, :query_mode,
-                :query_enrichment_enabled, :enrichment_provider, :enrichment_model
+                :query_enrichment_enabled, :enrichment_provider, :enrichment_model,
+                :max_llm_retries, :llm_retry_delay
 
     # === WRITERS ===
     def adapter=(value)
@@ -338,6 +341,18 @@ module Glancer
       raise ArgumentError, "query_mode must be one of: #{QUERY_MODES.join(", ")}" unless QUERY_MODES.include?(value)
 
       @query_mode = value
+    end
+
+    def max_llm_retries=(value)
+      raise ArgumentError, "max_llm_retries must be a non-negative integer" unless value.is_a?(Integer) && value >= 0
+
+      @max_llm_retries = value
+    end
+
+    def llm_retry_delay=(value)
+      raise ArgumentError, "llm_retry_delay must be a positive number" unless value.is_a?(Numeric) && value.positive?
+
+      @llm_retry_delay = value
     end
 
     # Returns the Blazer base path if Blazer is available, nil otherwise.

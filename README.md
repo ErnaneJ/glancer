@@ -67,6 +67,16 @@ Glancer removes that friction. It gives your app a persistent, context-aware dat
 
 Glancer is built on top of [**ruby_llm**](https://github.com/crmne/ruby_llm), a provider-agnostic LLM client for Ruby. All LLM calls (query generation, humanized responses, embeddings, and optional question enrichment) go through ruby_llm, so any model it supports works with Glancer.
 
+### Supported models by provider
+
+| Provider | Chat / Code models | Embedding models | Model list |
+|---|---|---|---|
+| **Gemini** | `gemini-2.0-flash`, `gemini-2.5-pro`, `gemini-1.5-pro`, … | `text-embedding-004` | [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) |
+| **OpenAI** | `gpt-4o`, `gpt-4o-mini`, `o3-mini`, … | `text-embedding-3-large`, `text-embedding-3-small` | [platform.openai.com/docs/models](https://platform.openai.com/docs/models) |
+| **OpenRouter** | Any model available on the platform (e.g. `anthropic/claude-3.5-sonnet`, `deepseek/deepseek-r1:free`) | Not natively supported — pair with `:gemini` or `:openai` for embeddings | [openrouter.ai/models](https://openrouter.ai/models) |
+
+The full list of models validated by the ruby_llm gem is at [rubyllm.com/available-models](https://rubyllm.com/available-models/). If you need a model not yet in that registry, set `assume_model_exists: true` by configuring an explicit `embedding_model` or `code_model` string.
+
 ## Installation
 
 ### 1. Add to your Gemfile
@@ -167,6 +177,20 @@ Route all queries to a replica to offload your primary database:
 config.read_only_db = ENV["REPLICA_DATABASE_URL"]
 ```
 
+### Rate limiting
+
+When using free-tier or low-quota LLM providers (e.g. Gemini Flash free tier), you may hit rate limits. Glancer automatically retries with backoff when it receives a quota-exceeded or rate-limit error from any provider:
+
+- If the provider returns a **"retry in Xs"** hint in the error message (Gemini does this), that exact delay is used.
+- Otherwise, **exponential backoff** is applied: `llm_retry_delay × 2^(attempt − 1)`.
+
+```ruby
+config.max_llm_retries = 3   # retries before propagating the error (0 = disable)
+config.llm_retry_delay = 60  # base delay in seconds when no retry hint is provided
+```
+
+A warning is logged on each retry attempt so you can monitor them in your logs. If all retries are exhausted, the error is surfaced to the user normally.
+
 ### Full configuration reference
 
 | Option | Default | Description |
@@ -197,6 +221,8 @@ config.read_only_db = ENV["REPLICA_DATABASE_URL"]
 | `models_documents_weight` | `1.1` | Score boost for model chunks |
 | `history_limit` | `6` | Prior conversation turns included in the LLM prompt |
 | `workflow_cache_ttl` | `5.minutes` | In-memory result cache TTL; `0` to disable |
+| `max_llm_retries` | `3` | Max retries on rate-limit / quota errors; `0` to disable |
+| `llm_retry_delay` | `60` | Base delay in seconds between retries (exponential backoff; API hint takes priority) |
 | `log_verbosity` | `:info` | `:silent`, `:none`, `:info`, or `:debug` |
 | `log_output_path` | `nil` | Log file path; `nil` writes to stdout |
 | `blazer_path` | `nil` | Blazer base path; auto-detected when `blazer` gem is present |

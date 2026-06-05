@@ -39,7 +39,9 @@ module Glancer
         context += "\n\nADDITIONAL INSTRUCTIONS:\n#{custom}" if custom.present?
 
         chat.with_instructions(context)
-        response = chat.ask(question)
+        response = Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::LLM") do
+          chat.ask(question)
+        end
 
         response.content
       rescue StandardError => e
@@ -72,7 +74,9 @@ module Glancer
           model: Glancer.configuration.resolved_chat_model,
           assume_model_exists: true
         )
-        chat.ask(prompt).content
+        Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::LLM") do
+          chat.ask(prompt).content
+        end
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::LLM", "explain_missing_tables failed: #{e.message}")
         "Não consegui encontrar a(s) tabela(s) **#{missing}** no schema indexado. " \
@@ -87,7 +91,9 @@ module Glancer
         )
         prompt = "Generate a concise, descriptive title (max 45 characters, no quotes, no punctuation at end) " \
                  "for a database query session starting with this question: #{question}"
-        chat.ask(prompt).content.strip.truncate(50)
+        Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::LLM") do
+          chat.ask(prompt).content.strip.truncate(50)
+        end
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::LLM", "generate_title failed: #{e.message}")
         question.truncate(45)
@@ -116,7 +122,9 @@ module Glancer
           5. Respond in the user's language.
         PROMPT
 
-        chat.ask(prompt).content
+        Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::LLM") do
+          chat.ask(prompt).content
+        end
       end
     end
   end

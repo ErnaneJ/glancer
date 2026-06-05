@@ -143,6 +143,14 @@ RSpec.describe Glancer::Configuration do
     it "sets read_only_db to nil" do
       expect(config.read_only_db).to be_nil
     end
+
+    it "sets max_llm_retries to 3" do
+      expect(config.max_llm_retries).to eq(3)
+    end
+
+    it "sets llm_retry_delay to 60" do
+      expect(config.llm_retry_delay).to eq(60)
+    end
   end
 
   # ── adapter= ─────────────────────────────────────────────────────────────────
@@ -853,6 +861,58 @@ RSpec.describe Glancer::Configuration do
     it "returns enrichment_model when set" do
       config.enrichment_model = "gemini-2.0-flash"
       expect(config.resolved_enrichment_model).to eq("gemini-2.0-flash")
+    end
+  end
+
+  # ── max_llm_retries= ─────────────────────────────────────────────────────────
+
+  describe "#max_llm_retries=" do
+    it "defaults to 3" do
+      expect(config.max_llm_retries).to eq(3)
+    end
+
+    it "accepts 0 (disables retries)" do
+      config.max_llm_retries = 0
+      expect(config.max_llm_retries).to eq(0)
+    end
+
+    it "accepts a positive integer" do
+      config.max_llm_retries = 5
+      expect(config.max_llm_retries).to eq(5)
+    end
+
+    it "raises ArgumentError for a negative integer" do
+      expect { config.max_llm_retries = -1 }.to raise_error(ArgumentError, /non-negative integer/)
+    end
+
+    it "raises ArgumentError for a non-integer" do
+      expect { config.max_llm_retries = 2.5 }.to raise_error(ArgumentError, /non-negative integer/)
+    end
+  end
+
+  # ── llm_retry_delay= ─────────────────────────────────────────────────────────
+
+  describe "#llm_retry_delay=" do
+    it "defaults to 60" do
+      expect(config.llm_retry_delay).to eq(60)
+    end
+
+    it "accepts a positive integer" do
+      config.llm_retry_delay = 30
+      expect(config.llm_retry_delay).to eq(30)
+    end
+
+    it "accepts a positive float" do
+      config.llm_retry_delay = 0.5
+      expect(config.llm_retry_delay).to eq(0.5)
+    end
+
+    it "raises ArgumentError for zero" do
+      expect { config.llm_retry_delay = 0 }.to raise_error(ArgumentError, /positive number/)
+    end
+
+    it "raises ArgumentError for a negative number" do
+      expect { config.llm_retry_delay = -5 }.to raise_error(ArgumentError, /positive number/)
     end
   end
 end

@@ -17,7 +17,9 @@ module Glancer
           assume_model_exists: true
         )
 
-        response = chat.ask(prompt)
+        response = Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::Builder") do
+          chat.ask(prompt)
+        end
 
         Glancer::Utils::Logger.info("Workflow::Builder",
                                     "LLM responded with SQL (length: #{response.content&.length || 0} characters)")
@@ -64,7 +66,9 @@ module Glancer
           assume_model_exists: true
         )
 
-        response = chat.ask(prompt)
+        response = Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::Builder") do
+          chat.ask(prompt)
+        end
 
         # Clean the response to ensure we only have the raw SQL
         Glancer::Workflow::SQLExtractor.extract(response.content)
@@ -84,7 +88,9 @@ module Glancer
           assume_model_exists: true
         )
 
-        response = chat.ask(prompt)
+        response = Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::Builder") do
+          chat.ask(prompt)
+        end
         Glancer::Utils::Logger.info("Workflow::Builder",
                                     "LLM responded with AR code (length: #{response.content&.length || 0} chars)")
         response.content
@@ -118,7 +124,9 @@ module Glancer
           assume_model_exists: true
         )
 
-        response = chat.ask(prompt)
+        response = Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::Builder") do
+          chat.ask(prompt)
+        end
         Glancer::Workflow::ARExtractor.extract(response.content)
       rescue StandardError => e
         Glancer::Utils::Logger.error("Workflow::Builder", "Failed to fix AR code: #{e.message}")

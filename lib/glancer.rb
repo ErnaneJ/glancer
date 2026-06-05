@@ -20,7 +20,8 @@ require "glancer/utils/logger" # Glancer::Utils::Logger
 require "glancer/utils/markdown_helper" # Glancer::Utils::MarkdownHelper
 require "glancer/utils/result_formatter" # Glancer::Utils::ResultFormatter
 require "glancer/utils/table_stats" # Glancer::Utils::TableStats
-require "glancer/utils/transaction" # Glancer::Utils::Transaction
+require "glancer/utils/transaction"        # Glancer::Utils::Transaction
+require "glancer/utils/rate_limit_retry"   # Glancer::Utils::RateLimitRetry
 
 require "glancer/engine" # Glancer::Engine
 

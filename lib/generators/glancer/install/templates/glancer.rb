@@ -101,7 +101,7 @@ Glancer.configure do |config|
   #   avoid errors. If you must use an OpenRouter embedding model anyway, set
   #   embedding_model explicitly (e.g., 'openai/text-embedding-3-small') —
   #   Glancer will bypass the model registry check automatically.
-  #
+  #   https://rubyllm.com/available-models/
   # Accepted: nil | :gemini | :openai | :openrouter
   config.embedding_provider = nil
 
@@ -202,6 +202,19 @@ Glancer.configure do |config|
   # calling the LLM again. Set to 0 to disable. Cache is process-local (not
   # shared across Puma workers or restarts).
   config.workflow_cache_ttl = 5.minutes
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Rate limiting
+  # ─────────────────────────────────────────────────────────────────────────────
+
+  # Maximum number of retries when an LLM or embedding API returns a rate-limit
+  # or quota-exceeded error. Set to 0 to disable automatic retries.
+  config.max_llm_retries = 3
+
+  # Base delay in seconds between rate-limit retries. When the provider returns a
+  # "retry in Xs" hint (e.g. Gemini), that hint takes priority. Otherwise,
+  # exponential backoff is applied: delay * 2^(attempt - 1).
+  config.llm_retry_delay = 60
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Logging

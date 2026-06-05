@@ -50,7 +50,9 @@ module Glancer
           assume_model_exists: true
         )
 
-        enriched = chat.ask(prompt).content.to_s.strip
+        enriched = Glancer::Utils::RateLimitRetry.with_retry(context: "Workflow::QueryEnricher") do
+          chat.ask(prompt).content.to_s.strip
+        end
         enriched.presence || question
       rescue StandardError => e
         Glancer::Utils::Logger.warn("Workflow::QueryEnricher", "Enrichment failed, using original: #{e.message}")

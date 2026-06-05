@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-06-05
+
+### Added
+
+- **Rate-limit retry with backoff**: all LLM and embedding API calls now automatically
+  retry when a rate-limit / quota-exceeded error is received. If the provider returns a
+  "retry in Xs" hint (e.g. Gemini Flash), that exact delay is honoured; otherwise
+  exponential backoff is applied (`llm_retry_delay * 2^attempt`). Resolves [#1].
+- **`max_llm_retries` config option** (default: `3`): maximum number of retry attempts
+  before propagating the error to the user. Set to `0` to disable automatic retries.
+- **`llm_retry_delay` config option** (default: `60` seconds): base delay in seconds
+  used when the provider does not supply a retry-after hint.
+
 ## [1.0.0] — 2026-05-24
 
 First public release.
