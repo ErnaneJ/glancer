@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    glancer (1.0.0)
+    glancer (1.1.0)
       commonmarker (~> 2.8)
       rails (>= 7.0)
       ruby_llm (~> 1.15)
